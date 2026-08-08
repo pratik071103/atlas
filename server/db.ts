@@ -60,8 +60,10 @@ db.exec(`
     billing_cycle TEXT NOT NULL,
     checkout_mode TEXT NOT NULL,
     amount REAL NOT NULL,
-    status TEXT NOT NULL DEFAULT 'active',
+    status TEXT NOT NULL DEFAULT 'pending',
     credits_granted INTEGER NOT NULL DEFAULT 0,
+    dodo_session_id TEXT,
+    dodo_payment_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -80,6 +82,27 @@ db.exec(`
     event_type TEXT NOT NULL,
     status TEXT NOT NULL,
     payload TEXT NOT NULL,
+    event_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// Purchases gains Dodo correlation fields; status now spans the full payment
+// lifecycle: pending → processing → active | failed | cancelled.
+// `node:sqlite` has no migration tooling, so new columns are added with
+// guarded ALTER TABLE statements that no-op on fresh databases (where the
+// CREATE TABLE above already includes them) and on older database files.
+function ensureColumn(table: string, column: string, ddl: string) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+  }
+}
+
+ensureColumn("purchases", "dodo_session_id", "TEXT");
+ensureColumn("purchases", "dodo_payment_id", "TEXT");
+
+// webhook_events stores Dodo's `webhook-id` so replays can be deduped.
+ensureColumn("webhook_events", "event_id", "TEXT");
+
+db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_events_event_id ON webhook_events (event_id) WHERE event_id IS NOT NULL;`);

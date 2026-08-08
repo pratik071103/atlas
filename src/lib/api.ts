@@ -1,7 +1,7 @@
 export interface SessionIdentity {
   kind: "user" | "guest";
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   billingAddress?: string | null;
 }
 
@@ -19,12 +19,36 @@ export interface Purchase {
   created_at: string;
 }
 
+export interface CheckoutSession {
+  purchaseId: string;
+  sessionId: string | null;
+  checkoutUrl: string | null;
+  simulated: boolean;
+}
+
+export interface CheckoutStatus {
+  purchaseId: string;
+  status: string;
+  productName: string;
+  amount: number;
+  credits: number;
+}
+
 export interface LedgerEntry {
   id: string;
   delta: number;
   reason: string;
   balance_after: number;
   created_at: string;
+}
+
+export interface WebhookEventRow {
+  id: string;
+  eventType: string;
+  status: string;
+  eventId: string | null;
+  createdAt: string;
+  payloadPreview: string;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -49,8 +73,7 @@ export const api = {
   signIn: (email: string, password: string) =>
     request("/auth/sign-in", { method: "POST", body: JSON.stringify({ email, password }) }),
 
-  continueAsGuest: (name: string, email: string, billingAddress: string) =>
-    request("/auth/guest", { method: "POST", body: JSON.stringify({ name, email, billingAddress }) }),
+  continueAsGuest: () => request("/auth/guest", { method: "POST", body: JSON.stringify({}) }),
 
   signOut: () => request("/auth/sign-out", { method: "POST" }),
 
@@ -60,10 +83,13 @@ export const api = {
     billingCycle: "monthly" | "yearly";
     mode: "redirect" | "overlay" | "inline";
   }) =>
-    request<{ purchaseId: string; redirectUrl: string }>("/checkout/session", {
+    request<CheckoutSession>("/checkout/session", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  getCheckoutStatus: (purchaseId: string) =>
+    request<CheckoutStatus>(`/checkout/${purchaseId}/status`),
 
   getDashboard: () =>
     request<{
@@ -90,4 +116,6 @@ export const api = {
 
   updatePaymentMethod: () =>
     request<{ url: string; simulated: boolean }>("/billing/payment-method", { method: "POST" }),
+
+  getWebhookEvents: () => request<{ events: WebhookEventRow[] }>("/webhooks/events"),
 };

@@ -64,24 +64,42 @@ server/
   data/products.ts          Re-exports shared/catalog.ts
 ```
 
-## Where to plug in real Dodo Payments
+## Dodo Payments integration
 
-**`server/routes/checkout.ts`** — currently simulates an instant successful
-purchase so the rest of the app has real data to show. Replace the body of the
-`POST /session` handler with a call to Dodo's checkout session API
-(`dodo.checkoutSessions.create(...)`), and return the resulting
-`checkout_url` / client token instead of the simulated redirect.
+The checkout toggle (`redirect | overlay | inline`) and the webhook pipeline are
+wired to the real Dodo Payments API:
 
-**`server/routes/webhooks.ts`** — already verifies Standard Webhooks HMAC
-signatures (`server/lib/webhookVerify.ts`) and has a `switch` stubbed for the
-event types this project's data model expects: `payment.succeeded`,
-`payment.failed`, `subscription.plan_changed`, `subscription.renewed`,
-`subscription.cancelled` / `.expired`. Point your Dodo webhook endpoint at
-`POST /api/webhooks/dodo` and set `DODO_WEBHOOK_SECRET` in `.env`.
+- **`server/routes/checkout.ts`** — `POST /api/checkout/session` creates a real
+  checkout session via the `dodopayments` SDK (server) and returns the
+  `checkout_url`. The toggle mode only changes what the frontend does with it:
+  redirect (`window.location`), overlay, or inline (`dodopayments-checkout`
+  SDK frame injected into `#dodo-inline-checkout` on the pricing page).
+  If `DODO_API_KEY` is unset (or `SIMULATE_PAYMENTS=1`), it falls back to the
+  old instant simulated purchase so the app still runs offline.
+- **Payment lifecycle** — purchases start `pending`; Dodo webhooks advance
+  them: `payment.processing` → `processing`, `payment.succeeded` → `active`
+  (credits granted exactly once), `payment.failed` → `failed`,
+  `payment.cancelled` → `cancelled`.
+- **`server/routes/webhooks.ts`** — `POST /api/webhooks/dodo` verifies the
+  Standard Webhooks HMAC signature (with timestamp freshness + replay
+  dedupe via the `webhook-id`), then applies the payment state machine.
+- **Dashboard verification** — every mode returns the customer to
+  `/dashboard?checkout=<purchaseId>` (via `return_url`). While the webhook
+  hasn't landed, the dashboard shows a "Verifying payment…" overlay that
+  polls the purchase status; the result appears as a success/failure banner.
 
-**`shared/catalog.ts`** — swap the demo prices/tiers for your real Dodo
-product IDs; both the pricing page and the checkout route read from this one
-file.
+### Going live / testing the webhook loop
+
+1. Create the catalog products in the Dodo **test** dashboard and paste their
+   ids into `dodoProductId` in `shared/catalog.ts`.
+2. Copy `.env.example` → `.env`; set `DODO_API_KEY` and `DODO_WEBHOOK_SECRET`
+   (keep existing values if already filled).
+3. Expose the API to the internet so Dodo can deliver webhooks:
+   `ngrok http 8787` (or `cloudflared tunnel --url http://localhost:8787`),
+   then set the webhook URL in the Dodo dashboard to
+   `https://<tunnel>/api/webhooks/dodo` with the signing secret.
+4. `npm run dev` and buy any tier in all three checkout modes. Test cards:
+   `4000 0000 0000 0002` = success, `4000 0000 0000 0008` = decline.
 
 ## Auth note
 

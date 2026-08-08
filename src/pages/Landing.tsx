@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Zap, ShieldCheck, Layers } from "lucide-react";
+import { Zap, ShieldCheck, Layers } from "lucide-react";
 
 export function Landing() {
   return (
@@ -21,8 +21,8 @@ export function Landing() {
           top-ups.
         </p>
         <div className="mt-9 flex items-center justify-center gap-3">
-          <Link to="/pricing" className="btn-primary text-base px-6 py-3.5">
-            See pricing <ArrowRight size={16} />
+          <Link to="/pricing" className="bc-cta bc-cta--centered" style={{ width: "auto" }}>
+            <span className="bc-cta__label">See pricing</span>
           </Link>
           <Link to="/pricing" className="btn-secondary text-base px-6 py-3.5">
             Try as guest

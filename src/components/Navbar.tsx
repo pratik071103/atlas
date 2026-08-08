@@ -28,13 +28,18 @@ export function Navbar() {
               Dashboard
             </Link>
           )}
+          {import.meta.env.DEV && (
+            <Link to="/dev/webhooks" className="hover:text-ink-900">
+              Webhooks
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
           {identity ? (
             <>
               <span className="hidden sm:inline text-sm text-ink-600">
-                {identity.name.split(" ")[0]}
+                {identity.name?.split(" ")[0] ?? "Guest"}
                 {identity.kind === "guest" && (
                   <span className="pill bg-ink-100 text-ink-600 ml-2">Guest</span>
                 )}

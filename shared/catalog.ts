@@ -1,6 +1,10 @@
 // Demo product catalog for the Atlas Studio / Dodo Payments reference frontend.
 // Prices and copy are placeholders — wire real values from your Dodo Payments
 // dashboard when connecting the checkout folder to the live API.
+//
+// `dodoProductId` is the id of the product you create in the Dodo Payments
+// dashboard (test mode) for each tier. Create products with matching prices
+// and billing intervals, then paste the ids here.
 
 export type BillingModel =
   | "one_time"
@@ -19,6 +23,8 @@ export interface PriceTier {
   description: string;
   features: string[];
   highlighted?: boolean;
+  /** Dodo Payments product id for this tier (from the Dodo dashboard). */
+  dodoProductId: string;
 }
 
 export interface Product {
@@ -81,6 +87,7 @@ export const CATALOG: Product[] = [
         monthly: 9,
         yearly: 9,
         credits: 5,
+        dodoProductId: "pdt_0NkxCWAFZAlYbC8lkjp1q",
         description: "One-time purchase, credits never expire.",
         features: ["5 image-generation credits", "No expiry", "Use anytime from your dashboard"],
       },
@@ -100,6 +107,7 @@ export const CATALOG: Product[] = [
         monthly: 10,
         yearly: 96,
         credits: 25,
+        dodoProductId: "pdt_atlas_starter",
         description: "Good for trying Atlas out.",
         features: ["25 credits / month", "Standard queue", "Email support"],
       },
@@ -109,6 +117,7 @@ export const CATALOG: Product[] = [
         monthly: 24,
         yearly: 230,
         credits: 80,
+        dodoProductId: "pdt_atlas_standard",
         description: "For creators who ship weekly.",
         features: ["80 credits / month", "Priority queue", "Email + chat support"],
         highlighted: true,
@@ -119,6 +128,7 @@ export const CATALOG: Product[] = [
         monthly: 49,
         yearly: 470,
         credits: 200,
+        dodoProductId: "pdt_atlas_pro",
         description: "For studios and power users.",
         features: ["200 credits / month", "Fastest queue", "Priority support"],
       },
@@ -138,6 +148,7 @@ export const CATALOG: Product[] = [
         label: "Pay-per-image",
         monthly: 0.4,
         yearly: 0.4,
+        dodoProductId: "pdt_ai_image_gen",
         description: "$0.40 per image, billed at end of cycle.",
         features: ["No minimum spend", "Usage reported to Dodo automatically", "Real-time credit deduction"],
       },
@@ -157,6 +168,7 @@ export const CATALOG: Product[] = [
         monthly: 8,
         yearly: 80,
         seats: 1,
+        dodoProductId: "pdt_team_seat",
         description: "Billed per active teammate, per month.",
         features: ["Shared workspace credits", "Per-seat usage history", "Remove anytime"],
       },
@@ -176,6 +188,7 @@ export const CATALOG: Product[] = [
         monthly: 10,
         yearly: 10,
         credits: 100,
+        dodoProductId: "pdt_topup_100",
         description: "Prepaid credits, never expire.",
         features: ["100 credits", "No recurring charge", "Stack with any plan"],
       },
@@ -185,6 +198,7 @@ export const CATALOG: Product[] = [
         monthly: 40,
         yearly: 40,
         credits: 500,
+        dodoProductId: "pdt_topup_500",
         description: "Best value top-up.",
         features: ["500 credits", "20% cheaper per credit", "No recurring charge"],
         highlighted: true,
@@ -197,4 +211,10 @@ export function formatPrice(amount: number) {
   return amount % 1 === 0
     ? `$${amount}`
     : `$${amount.toFixed(2)}`;
+}
+
+/** Converts a catalog price (whole dollars) to the lowest denomination of the
+ *  currency (cents for USD), which is what the Dodo API expects. */
+export function toMinorUnits(amount: number): number {
+  return Math.round(amount * 100);
 }

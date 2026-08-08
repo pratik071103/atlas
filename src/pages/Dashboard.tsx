@@ -1,30 +1,66 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { CreditCard, Wallet, Package, ExternalLink, Settings2, XCircle } from "lucide-react";
 import { useApp } from "../lib/AppContext";
 import { api, Purchase } from "../lib/api";
 import { KpiCard } from "../components/KpiCard";
 import { CreditPromptBar } from "../components/CreditPromptBar";
 import { CancelSubscriptionModal } from "../components/CancelSubscriptionModal";
+import { PaymentStatus, PaymentOutcome } from "../components/PaymentStatus";
+
+interface PaymentBanner {
+  kind: "success" | "failure";
+  text: string;
+}
 
 export function Dashboard() {
   const { identity, loadingIdentity } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<Purchase | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [paymentBanner, setPaymentBanner] = useState<PaymentBanner | null>(null);
+
+  const checkoutId = searchParams.get("checkout");
+
+  const loadDashboard = useCallback(async () => {
+    if (!identity) return;
+    const d = await api.getDashboard();
+    setPurchases(d.purchases);
+    setBalance(d.creditBalance);
+  }, [identity]);
 
   useEffect(() => {
     if (!identity) return;
-    api
-      .getDashboard()
-      .then((d) => {
-        setPurchases(d.purchases);
-        setBalance(d.creditBalance);
-      })
-      .finally(() => setLoading(false));
-  }, [identity]);
+    loadDashboard().finally(() => setLoading(false));
+  }, [identity, loadDashboard]);
+
+  const handlePaymentResolved = useCallback(
+    (outcome: PaymentOutcome) => {
+      // Clear the ?checkout= param so a refresh doesn't re-open the overlay.
+      setSearchParams({}, { replace: true });
+      if (outcome === "success") {
+        setPaymentBanner({
+          kind: "success",
+          text: "Payment successful — your purchase is active and credits have been added.",
+        });
+        loadDashboard();
+      } else if (outcome === "failure") {
+        setPaymentBanner({
+          kind: "failure",
+          text: "Payment failed or was cancelled. Nothing was charged — you can retry from the pricing page.",
+        });
+      } else {
+        setPaymentBanner({
+          kind: "failure",
+          text: "We haven't received the payment confirmation yet. Check back soon or retry from the pricing page.",
+        });
+      }
+    },
+    [setSearchParams, loadDashboard]
+  );
 
   if (loadingIdentity || loading) {
     return <main className="mx-auto max-w-6xl px-6 py-16 text-ink-600">Loading dashboard…</main>;
@@ -34,16 +70,43 @@ export function Dashboard() {
     return (
       <main className="mx-auto max-w-6xl px-6 py-16 text-center">
         <p className="text-ink-600">You need to sign in to view your dashboard.</p>
-        <Link to="/pricing" className="btn-primary mt-4 inline-flex">
-          Go to pricing
+        <Link to="/pricing" className="bc-cta mt-4 inline-flex max-w-xs mx-auto">
+          <span className="bc-cta__label">Go to pricing</span>
+          <span className="bc-cta__arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14" />
+              <path d="M13 6l6 6-6 6" />
+            </svg>
+          </span>
         </Link>
       </main>
     );
   }
 
-  const activePlan = purchases.find(
-    (p) => p.billing_model === "subscription" && (p.status === "active" || p.status === "scheduled_cancel")
+  // Single source of truth for the KPI cards and the "Your products" list —
+  // same data, same purchases array. Only purchases that actually settled
+  // (status webhooks set) can be an "Active plan": a row stuck on pending/
+  // processing because payment.succeeded hasn't arrived yet is NOT one.
+  const awaitingPayment = purchases.some(
+    (p) => p.status === "pending" || p.status === "processing"
   );
+  const activePlan =
+    purchases.find((p) => p.status === "active" || p.status === "scheduled_cancel") ?? null;
+
+  function planHint(p: Purchase): string {
+    switch (p.billing_model) {
+      case "subscription":
+        return p.billing_cycle === "yearly" ? "Billed yearly" : "Billed monthly";
+      case "seat_based":
+        return "Per seat, billed monthly";
+      case "usage_based":
+        return "Billed by usage";
+      case "on_demand":
+        return "Prepaid — never expires";
+      default:
+        return "One-time purchase";
+    }
+  }
 
   async function handlePortal() {
     const { url } = await api.openCustomerPortal();
@@ -75,16 +138,48 @@ export function Dashboard() {
         <div>
           <span className="eyebrow">Dashboard</span>
           <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-ink-900">
-            Welcome back, {identity.name.split(" ")[0]}
+            Welcome back, {identity.name?.split(" ")[0] ?? "Guest"}
           </h1>
           <p className="text-sm text-ink-600 mt-1">
-            {identity.email} · {identity.kind === "guest" ? "Guest checkout" : "Registered account"}
+            {identity.email ?? "No email on file"} ·{" "}
+            {identity.kind === "guest" ? "Guest checkout" : "Registered account"}
           </p>
         </div>
-        <Link to="/pricing" className="btn-secondary">
-          Browse more products
+        <Link to="/pricing" className="bc-cta bc-cta--dark" style={{width: 'auto'}}>
+          <span className="bc-cta__label">Browse more products</span>
+          <span className="bc-cta__arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14" />
+              <path d="M13 6l6 6-6 6" />
+            </svg>
+          </span>
         </Link>
       </div>
+
+      {paymentBanner && (
+        <div
+          className={`mt-5 card px-4 py-3 text-sm flex items-center justify-between gap-3 ${
+            paymentBanner.kind === "success"
+              ? "bg-lime-50 border-lime-100 text-lime-900"
+              : "bg-red-50 border-red-100 text-red-700"
+          }`}
+        >
+          {paymentBanner.text}
+          <div className="flex items-center gap-3 shrink-0">
+            {paymentBanner.kind === "failure" && (
+              <Link to="/pricing" className="font-semibold underline">
+                Retry
+              </Link>
+            )}
+            <button
+              onClick={() => setPaymentBanner(null)}
+              className="font-semibold shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {actionMsg && (
         <div className="mt-5 card px-4 py-3 bg-lavender-50 border-lavender-100 text-sm text-lavender-600 flex items-center justify-between gap-3">
@@ -104,15 +199,17 @@ export function Dashboard() {
             activePlan?.status === "scheduled_cancel"
               ? "Cancels at period end"
               : activePlan
-              ? "Renews automatically"
-              : "No active subscription"
+              ? planHint(activePlan)
+              : awaitingPayment
+              ? "Awaiting payment confirmation"
+              : "Pick a plan on pricing"
           }
         />
         <KpiCard
           label="Price"
           value={activePlan ? `$${activePlan.amount.toFixed(2)}` : "—"}
           icon={CreditCard}
-          hint={activePlan ? `Billed ${activePlan.billing_cycle}` : "Pick a plan on pricing"}
+          hint={activePlan ? planHint(activePlan) : "Pick a plan on pricing"}
         />
         <KpiCard label="Current credits" value={String(balance)} icon={Wallet} hint="Usable across all products" />
       </div>
@@ -125,8 +222,17 @@ export function Dashboard() {
           <Settings2 size={15} /> Update payment method
         </button>
         <button
-          onClick={() => activePlan && setCancelTarget(activePlan)}
-          disabled={!activePlan || activePlan.status !== "active"}
+          onClick={() =>
+            activePlan &&
+            activePlan.billing_model === "subscription" &&
+            activePlan.status === "active" &&
+            setCancelTarget(activePlan)
+          }
+          disabled={
+            !activePlan ||
+            activePlan.billing_model !== "subscription" ||
+            activePlan.status !== "active"
+          }
           className="btn-secondary hover:border-red-300 hover:text-red-600 disabled:opacity-40"
         >
           <XCircle size={15} /> Cancel subscription
@@ -190,6 +296,10 @@ export function Dashboard() {
           onClose={() => setCancelTarget(null)}
           onConfirm={handleCancelConfirm}
         />
+      )}
+
+      {checkoutId && (
+        <PaymentStatus checkoutId={checkoutId} onResolved={handlePaymentResolved} />
       )}
     </main>
   );

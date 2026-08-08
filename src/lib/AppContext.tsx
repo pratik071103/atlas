@@ -22,6 +22,8 @@ interface AppState {
   closeAuthModal: () => void;
   pendingIntent: CheckoutIntent | null;
   clearPendingIntent: () => void;
+  inlineCheckoutOpen: boolean;
+  setInlineCheckoutOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -31,6 +33,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loadingIdentity, setLoadingIdentity] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [pendingIntent, setPendingIntent] = useState<CheckoutIntent | null>(null);
+  const [inlineCheckoutOpen, setInlineCheckoutOpen] = useState(false);
 
   const refreshIdentity = useCallback(async () => {
     setLoadingIdentity(true);
@@ -70,8 +73,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       closeAuthModal,
       pendingIntent,
       clearPendingIntent,
+      inlineCheckoutOpen,
+      setInlineCheckoutOpen,
     }),
-    [identity, loadingIdentity, refreshIdentity, signOut, authModalOpen, openAuthModal, closeAuthModal, pendingIntent, clearPendingIntent]
+    [identity, loadingIdentity, refreshIdentity, signOut, authModalOpen, openAuthModal, closeAuthModal, pendingIntent, clearPendingIntent, inlineCheckoutOpen]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

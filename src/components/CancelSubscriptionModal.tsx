@@ -20,7 +20,7 @@ export function CancelSubscriptionModal({ planName, onClose, onConfirm }: Props)
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 px-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 backdrop-blur-sm px-4">
       <div className="card w-full max-w-md p-6 relative animate-pop-in">
         <button
           onClick={onClose}

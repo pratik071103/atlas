@@ -17,6 +17,38 @@ const GROUP_LABEL: Record<BillingModel, string> = {
   on_demand: "On-Demand",
 };
 
+/** Orb border color for the ::before hover animation on each card header. */
+const ORB_COLOR: Record<BillingModel, string> = {
+  one_time:     "rgba(138, 103, 218, 0.35)", // lavender-500
+  subscription: "rgba(174, 222, 31,  0.45)", // lime-500
+  usage_based:  "rgba(12,  15,  12,  0.10)", // ink-900
+  seat_based:   "rgba(138, 103, 218, 0.35)", // lavender-500
+  on_demand:    "rgba(174, 222, 31,  0.45)", // lime-500
+};
+
+/**
+ * Per-group orb shape:
+ *   --orb-radius       border-radius in default state
+ *   --orb-rotate       base rotation angle
+ *   --orb-rotate-extra extra degrees added on hover (so it spins as it travels)
+ */
+const ORB_SHAPE: Record<BillingModel, {
+  radius: string;
+  rotate: string;
+  rotateExtra: string;
+}> = {
+  // Softly rounded square (squircle)
+  one_time:     { radius: "22%",                                   rotate: "0deg",  rotateExtra: "15deg" },
+  // Rotated square → diamond; spins further on hover
+  subscription: { radius: "10px",                                  rotate: "45deg", rotateExtra: "20deg" },
+  // Organic asymmetric blob
+  usage_based:  { radius: "60% 40% 30% 70% / 60% 30% 70% 40%",    rotate: "0deg",  rotateExtra: "-10deg" },
+  // Alternating-corner pill — opposite corners rounded
+  seat_based:   { radius: "40px 4px 40px 4px / 4px 40px 4px 40px",rotate: "0deg",  rotateExtra: "10deg" },
+  // Teardrop — three rounded corners + one sharp
+  on_demand:    { radius: "0% 60% 60% 60%",                        rotate: "-30deg",rotateExtra: "25deg" },
+};
+
 function isCycleSensitive(group: BillingModel) {
   return group === "subscription" || group === "seat_based";
 }
@@ -64,7 +96,15 @@ export function PricingCard({ productName, group, tier, cycle, ctaLabel, onBuy, 
         tier.highlighted ? "border-ink-900 ring-1 ring-ink-900" : ""
       }`}
     >
-      <div className={`px-5 pt-5 pb-4 ${tint.header}`}>
+      <div
+        className={`pricing-card-header px-5 pt-5 pb-4 ${tint.header}`}
+        style={{
+          "--orb-color":        ORB_COLOR[group],
+          "--orb-radius":       ORB_SHAPE[group].radius,
+          "--orb-rotate":       ORB_SHAPE[group].rotate,
+          "--orb-rotate-extra": ORB_SHAPE[group].rotateExtra,
+        } as React.CSSProperties}
+      >
         <div className="flex items-center justify-between">
           <span className={`pill ${tint.badge}`}>{GROUP_LABEL[group]}</span>
           {tier.highlighted && <span className="pill bg-ink-900 text-white">Popular</span>}
@@ -98,11 +138,12 @@ export function PricingCard({ productName, group, tier, cycle, ctaLabel, onBuy, 
         </ul>
 
         <button
+          type="button"
           onClick={onBuy}
           disabled={loading}
-          className={tier.highlighted ? "btn-primary mt-5 w-full" : "btn-dark mt-5 w-full"}
+          className={`bc-cta bc-cta--centered mt-5${tier.highlighted ? " bc-cta--dark" : ""}`}
         >
-          {loading ? "Working…" : ctaLabel}
+          <span className="bc-cta__label">{loading ? "Working…" : ctaLabel}</span>
         </button>
 
         <div className="mt-3 flex items-center gap-1.5 text-xs text-ink-400">

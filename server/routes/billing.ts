@@ -31,8 +31,8 @@ billingRouter.get("/me", (req, res) => {
 
   res.json({
     identity: {
-      name: identity.name,
-      email: identity.email,
+      name: identity.name || null,
+      email: identity.email || null,
       kind: identity.ownerKind,
     },
     creditBalance: getBalance(identity.ownerId, identity.ownerKind),

@@ -45,13 +45,18 @@ authRouter.post("/sign-in", (req, res) => {
 });
 
 authRouter.post("/guest", (req, res) => {
+  // Guests are not asked for personal details anymore — the session is
+  // anonymous, and any info (email/name for billing) is collected by Dodo
+  // during checkout itself.
   const { name, email, billingAddress } = req.body ?? {};
-  if (!name || !email || !billingAddress) {
-    return res.status(400).json({ error: "Name, email, and billing address are required." });
-  }
-  const sessionId = createGuestSession(name, email, billingAddress);
+  const sessionId = createGuestSession(name ?? "", email ?? "", billingAddress ?? "");
   setSessionCookie(res, sessionId);
-  res.status(201).json({ name, email, billingAddress, kind: "guest" });
+  res.status(201).json({
+    kind: "guest",
+    name: name || null,
+    email: email || null,
+    billingAddress: billingAddress || null,
+  });
 });
 
 authRouter.post("/sign-out", (req, res) => {
@@ -65,8 +70,8 @@ authRouter.get("/session", (req, res) => {
   res.json({
     identity: {
       kind: identity.ownerKind,
-      name: identity.name,
-      email: identity.email,
+      name: identity.name || null,
+      email: identity.email || null,
       billingAddress: identity.billingAddress ?? null,
     },
   });

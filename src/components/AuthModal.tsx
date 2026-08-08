@@ -3,12 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { useApp } from "../lib/AppContext";
 import { api } from "../lib/api";
+import { launchCheckout } from "../lib/checkout";
 
 type Tab = "guest" | "signin" | "signup";
 
 export function AuthModal() {
-  const { authModalOpen, closeAuthModal, refreshIdentity, pendingIntent, clearPendingIntent } =
-    useApp();
+  const {
+    authModalOpen,
+    closeAuthModal,
+    refreshIdentity,
+    pendingIntent,
+    clearPendingIntent,
+    setInlineCheckoutOpen,
+  } = useApp();
   const navigate = useNavigate();
 
   const [tab, setTab] = useState<Tab>("guest");
@@ -18,27 +25,28 @@ export function AuthModal() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [billingAddress, setBillingAddress] = useState("");
 
   if (!authModalOpen) return null;
 
   async function afterAuthSuccess() {
     await refreshIdentity();
+    closeAuthModal();
     if (pendingIntent) {
       try {
-        await api.createCheckoutSession({
+        const session = await api.createCheckoutSession({
           productId: pendingIntent.productId,
           tierId: pendingIntent.tierId,
           billingCycle: pendingIntent.billingCycle,
           mode: pendingIntent.mode,
         });
+        launchCheckout(session, pendingIntent.mode, () => navigate("/dashboard"));
+        if (pendingIntent.mode === "inline") setInlineCheckoutOpen(true);
       } catch {
         // If checkout fails, still land the user on the dashboard signed in.
+        navigate("/dashboard");
       }
       clearPendingIntent();
     }
-    closeAuthModal();
-    navigate("/dashboard");
   }
 
   async function submit(e: FormEvent) {
@@ -47,7 +55,7 @@ export function AuthModal() {
     setBusy(true);
     try {
       if (tab === "guest") {
-        await api.continueAsGuest(name, email, billingAddress);
+        await api.continueAsGuest();
       } else if (tab === "signup") {
         await api.signUp(name, email, password);
       } else {
@@ -62,7 +70,7 @@ export function AuthModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 px-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 backdrop-blur-sm px-4">
       <div className="card w-full max-w-md p-6 relative animate-fade-up">
         <button
           onClick={closeAuthModal}
@@ -97,23 +105,23 @@ export function AuthModal() {
         </div>
 
         <form onSubmit={submit} className="mt-5 space-y-3">
-          {(tab === "guest" || tab === "signup") && (
+          {tab === "signup" && (
             <Field label="Full name" value={name} onChange={setName} placeholder="Ada Lovelace" />
           )}
-          <Field
-            label="Email"
-            type="email"
-            value={email}
-            onChange={setEmail}
-            placeholder="ada@example.com"
-          />
-          {tab === "guest" && (
+          {(tab === "signin" || tab === "signup") && (
             <Field
-              label="Billing address"
-              value={billingAddress}
-              onChange={setBillingAddress}
-              placeholder="221B Baker Street, London"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="ada@example.com"
             />
+          )}
+          {tab === "guest" && (
+            <p className="text-xs leading-relaxed text-ink-400">
+              Continue without an account — no details needed here. Any billing information is
+              collected on the secure payment page during checkout.
+            </p>
           )}
           {(tab === "signin" || tab === "signup") && (
             <Field

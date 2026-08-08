@@ -1,3 +1,4 @@
+import "./lib/env.js"; // must be first — loads .env for every other module
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";

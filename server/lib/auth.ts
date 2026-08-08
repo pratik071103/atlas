@@ -48,13 +48,13 @@ export function createUserSession(userId: string) {
   return id;
 }
 
-export function createGuestSession(name: string, email: string, billingAddress: string) {
+export function createGuestSession(name?: string, email?: string, billingAddress?: string) {
   const id = newId("sess");
   const expires = new Date(Date.now() + SESSION_TTL_DAYS * 86400_000);
   db.prepare(
     `INSERT INTO sessions (id, is_guest, guest_name, guest_email, guest_billing_address, expires_at)
      VALUES (?, 1, ?, ?, ?, ?)`
-  ).run(id, name, email, billingAddress, expires.toISOString());
+  ).run(id, name ?? "", email ?? "", billingAddress ?? "", expires.toISOString());
   return id;
 }
 
