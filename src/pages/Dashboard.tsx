@@ -83,15 +83,21 @@ export function Dashboard() {
     );
   }
 
-  // Single source of truth for the KPI cards and the "Your products" list —
-  // same data, same purchases array. Only purchases that actually settled
-  // (status webhooks set) can be an "Active plan": a row stuck on pending/
-  // processing because payment.succeeded hasn't arrived yet is NOT one.
-  const awaitingPayment = purchases.some(
+  // Filter out pending/processing items older than 24 hours (86400000 ms)
+  const now = Date.now();
+  const validPurchases = purchases.filter((p) => {
+    if (p.status === "pending" || p.status === "processing") {
+      const createdTime = new Date(p.created_at).getTime();
+      return !isNaN(createdTime) && now - createdTime < 24 * 60 * 60 * 1000;
+    }
+    return true;
+  });
+
+  const awaitingPayment = validPurchases.some(
     (p) => p.status === "pending" || p.status === "processing"
   );
   const activePlan =
-    purchases.find((p) => p.status === "active" || p.status === "scheduled_cancel") ?? null;
+    validPurchases.find((p) => p.status === "active" || p.status === "scheduled_cancel") ?? null;
 
   function planHint(p: Purchase): string {
     switch (p.billing_model) {
@@ -240,13 +246,20 @@ export function Dashboard() {
       </div>
 
       <div className="mt-8 grid lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 card p-5">
-          <div className="flex items-center gap-2">
-            <Package size={16} className="text-lime-700" />
-            <h2 className="text-sm font-bold text-ink-900">Your products</h2>
+        <div className="lg:col-span-3 card p-5 flex flex-col">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package size={16} className="text-lime-700" />
+              <h2 className="text-sm font-bold text-ink-900">Your products</h2>
+            </div>
+            {validPurchases.length > 5 && (
+              <span className="text-xs text-ink-400 font-medium">
+                {validPurchases.length} items (scroll to view all)
+              </span>
+            )}
           </div>
 
-          {purchases.length === 0 ? (
+          {validPurchases.length === 0 ? (
             <p className="mt-6 text-sm text-ink-600">
               Nothing purchased yet.{" "}
               <Link to="/pricing" className="text-lime-800 font-semibold">
@@ -255,8 +268,8 @@ export function Dashboard() {
               to get started.
             </p>
           ) : (
-            <ul className="mt-4 divide-y divide-ink-100">
-              {purchases.map((p) => (
+            <ul className="mt-4 divide-y divide-ink-100 max-h-[320px] overflow-y-auto pr-1.5">
+              {validPurchases.map((p) => (
                 <li key={p.id} className="py-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-ink-900">{p.product_name}</p>

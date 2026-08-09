@@ -17,6 +17,16 @@ billingRouter.get("/me", (req, res) => {
   const identity = requireIdentity(req, res);
   if (!identity) return;
 
+  // Auto-clear stale pending/processing checkouts older than 24 hours
+  db.prepare(
+    `DELETE FROM purchases
+     WHERE status IN ('pending', 'processing')
+       AND (
+         datetime(created_at) < datetime('now', '-24 hours')
+         OR datetime(created_at) IS NULL
+       )`
+  ).run();
+
   const purchases = db
     .prepare(
       `SELECT * FROM purchases WHERE owner_id = ? AND owner_kind = ? ORDER BY created_at DESC`

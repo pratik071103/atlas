@@ -231,3 +231,93 @@
 .animate-pop-in {
   animation: pop-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* ─── Uiverse.io Button by vinodjangid07 (Storefront Preview) ────────────── */
+.storefront-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.Btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: none;
+  background-color: #0c0f0c;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(12, 15, 12, 0.15);
+  transition: all 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.Btn .svgContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.Btn .BG {
+  position: absolute;
+  content: "";
+  width: 100%;
+  height: 100%;
+  background: #c3ee3f;
+  z-index: 1;
+  border-radius: 9999px;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform: scale(0);
+}
+
+.Btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px -4px rgba(12, 15, 12, 0.3);
+}
+
+.Btn:hover .BG {
+  transform: scale(1);
+}
+
+.Btn:hover .svgContainer {
+  color: #0c0f0c;
+}
+
+.storefront-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+  background-color: #0c0f0c;
+  color: #ffffff;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px rgba(12, 15, 12, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 40;
+}
+
+.storefront-btn-wrapper:hover .storefront-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
