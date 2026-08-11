@@ -7,6 +7,8 @@ import { CheckoutModeSwitch, CheckoutMode } from "../components/CheckoutModeSwit
 import { PricingCard } from "../components/PricingCard";
 import { useApp } from "../lib/AppContext";
 import { api } from "../lib/api";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
 import {
   launchCheckout,
   closeCheckout,
@@ -78,7 +80,7 @@ export function Pricing() {
             Flexible pricing for every type of creator — from pay-per-image to unlimited plans.
           </p>
 
-          <div className="mt-6 card flex items-start gap-2.5 px-4 py-3 bg-lime-50 border-lime-100">
+          <Card className="mt-6 flex items-start gap-2.5 px-4 py-3 bg-lime-50 border-lime-100">
             <Info size={16} className="mt-0.5 shrink-0 text-lime-800" />
             <p className="text-sm text-lime-900">
               Dodo Payments demo: <strong>one-time packs</strong>,{" "}
@@ -86,7 +88,7 @@ export function Pricing() {
               <strong>seat-based add-ons</strong>, and <strong>on-demand top-ups</strong> — all
               live against a local reference server.
             </p>
-          </div>
+          </Card>
 
           <div className="mt-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <PricingToggle value={cycle} onChange={setCycle} />
@@ -133,13 +135,14 @@ export function Pricing() {
                 session — you can start again from the pricing shelf.
               </p>
             </div>
-            <button
+            <Button
+              variant="ghost"
               onClick={closeInlineCheckout}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-ink-100 px-3 py-2 text-sm font-semibold text-ink-600 hover:bg-ink-50 hover:text-ink-900"
+              className="shrink-0 border border-ink-100"
             >
               <X size={16} />
               Cancel checkout
-            </button>
+            </Button>
           </div>
         </>
       )}

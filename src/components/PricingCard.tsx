@@ -1,12 +1,18 @@
+import { ComponentProps } from "react";
 import { Check } from "lucide-react";
 import { BillingModel, PriceTier, formatPrice } from "../lib/catalog";
+import { CtaButton } from "./ui/Button";
+import { Card } from "./ui/Card";
+import { Badge } from "./ui/Badge";
 
-const GROUP_TINT: Record<BillingModel, { badge: string; header: string }> = {
-  one_time: { badge: "bg-lavender-100 text-lavender-600", header: "bg-lavender-50" },
-  subscription: { badge: "bg-lime-100 text-lime-800", header: "bg-lime-50" },
-  usage_based: { badge: "bg-ink-100 text-ink-600", header: "bg-ink-50" },
-  seat_based: { badge: "bg-lavender-100 text-lavender-600", header: "bg-lavender-50" },
-  on_demand: { badge: "bg-lime-100 text-lime-800", header: "bg-lime-50" },
+type BadgeTone = ComponentProps<typeof Badge>["tone"];
+
+const GROUP_TINT: Record<BillingModel, { badge: BadgeTone; header: string }> = {
+  one_time: { badge: "lavender", header: "bg-lavender-50" },
+  subscription: { badge: "lime", header: "bg-lime-50" },
+  usage_based: { badge: "ink", header: "bg-ink-50" },
+  seat_based: { badge: "lavender", header: "bg-lavender-50" },
+  on_demand: { badge: "lime", header: "bg-lime-50" },
 };
 
 const GROUP_LABEL: Record<BillingModel, string> = {
@@ -91,8 +97,8 @@ export function PricingCard({ productName, group, tier, cycle, ctaLabel, onBuy, 
     : tier.monthly;
 
   return (
-    <div
-      className={`card flex w-[280px] shrink-0 snap-start flex-col overflow-hidden ${
+    <Card
+      className={`flex w-[280px] shrink-0 snap-start flex-col overflow-hidden ${
         tier.highlighted ? "border-ink-900 ring-1 ring-ink-900" : ""
       }`}
     >
@@ -106,8 +112,8 @@ export function PricingCard({ productName, group, tier, cycle, ctaLabel, onBuy, 
         } as React.CSSProperties}
       >
         <div className="flex items-center justify-between">
-          <span className={`pill ${tint.badge}`}>{GROUP_LABEL[group]}</span>
-          {tier.highlighted && <span className="pill bg-ink-900 text-white">Popular</span>}
+          <Badge tone={tint.badge}>{GROUP_LABEL[group]}</Badge>
+          {tier.highlighted && <Badge tone="dark">Popular</Badge>}
         </div>
         <h4 className="mt-3 text-base font-bold text-ink-900">{productName}</h4>
         <p className="text-xs text-ink-600">{tier.label}</p>
@@ -137,20 +143,21 @@ export function PricingCard({ productName, group, tier, cycle, ctaLabel, onBuy, 
           ))}
         </ul>
 
-        <button
-          type="button"
+        <CtaButton
+          fullWidth
+          dark={tier.highlighted}
+          loading={loading}
           onClick={onBuy}
-          disabled={loading}
-          className={`bc-cta bc-cta--centered mt-5${tier.highlighted ? " bc-cta--dark" : ""}`}
+          className="mt-5"
         >
-          <span className="bc-cta__label">{loading ? "Working…" : ctaLabel}</span>
-        </button>
+          {ctaLabel}
+        </CtaButton>
 
         <div className="mt-3 flex items-center gap-1.5 text-xs text-ink-400">
           <span className="h-1.5 w-1.5 rounded-full bg-lime-500" />
           {tier.credits ? `${tier.credits} credits` : tier.seats ? "1 seat" : "Metered usage"}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

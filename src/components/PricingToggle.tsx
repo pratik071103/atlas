@@ -1,3 +1,5 @@
+import { Badge } from "./ui/Badge";
+
 interface Props {
   value: "monthly" | "yearly";
   onChange: (v: "monthly" | "yearly") => void;
@@ -22,9 +24,7 @@ export function PricingToggle({ value, onChange }: Props) {
         }`}
       >
         Yearly
-        <span className={`pill ${isYearly ? "bg-lime-400 text-ink-900" : "bg-lime-100 text-lime-800"}`}>
-          Save 20%
-        </span>
+        <Badge tone={isYearly ? "lime-solid" : "lime"}>Save 20%</Badge>
       </button>
     </div>
   );

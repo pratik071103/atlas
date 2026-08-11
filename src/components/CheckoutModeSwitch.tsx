@@ -1,4 +1,5 @@
 import { ExternalLink, PanelTop, SquareCode, Store } from "lucide-react";
+import { Card } from "./ui/Card";
 
 export type CheckoutMode = "redirect" | "overlay" | "inline";
 
@@ -71,14 +72,14 @@ export function CheckoutModeSwitch({ value, onChange }: Props) {
         </div>
       </div>
 
-      <div className="card flex items-center gap-2.5 px-3.5 py-2 min-w-0 sm:max-w-xs">
+      <Card className="flex items-center gap-2.5 px-3.5 py-2 min-w-0 sm:max-w-xs">
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-lime-100 text-lime-800">
           <active.icon size={14} />
         </span>
         <p className="text-xs text-ink-600 leading-snug truncate sm:whitespace-normal">
           {active.blurb}
         </p>
-      </div>
+      </Card>
     </div>
   );
 }
