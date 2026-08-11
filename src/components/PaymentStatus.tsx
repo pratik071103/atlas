@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api, CheckoutStatus } from "../lib/api";
+import { Card } from "./ui/Card";
 
 // ---------------------------------------------------------------------------
 // PaymentStatus — "Verifying payment…" overlay for the dashboard.
@@ -85,7 +86,7 @@ export function PaymentStatus({ checkoutId, onResolved }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/50 backdrop-blur-sm px-4">
-      <div className="card w-full max-w-sm p-6 text-center">
+      <Card className="w-full max-w-sm p-6 text-center">
         <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-lime-100 text-lime-800">
           <Loader2 size={22} className="animate-spin" />
         </span>
@@ -101,7 +102,7 @@ export function PaymentStatus({ checkoutId, onResolved }: Props) {
             {status.productName} · {status.status}
           </p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

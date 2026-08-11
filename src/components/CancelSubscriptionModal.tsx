@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { X, CalendarClock, OctagonX } from "lucide-react";
+import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
 
 interface Props {
   planName: string;
@@ -21,7 +23,7 @@ export function CancelSubscriptionModal({ planName, onClose, onConfirm }: Props)
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 backdrop-blur-sm px-4">
-      <div className="card w-full max-w-md p-6 relative animate-pop-in">
+      <Card className="w-full max-w-md p-6 relative animate-pop-in">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-ink-400 hover:text-ink-800"
@@ -77,10 +79,10 @@ export function CancelSubscriptionModal({ planName, onClose, onConfirm }: Props)
           </button>
         </div>
 
-        <button onClick={onClose} className="btn-secondary w-full mt-4">
+        <Button variant="secondary" fullWidth onClick={onClose} className="mt-4">
           Never mind, keep my plan
-        </button>
-      </div>
+        </Button>
+      </Card>
     </div>
   );
 }

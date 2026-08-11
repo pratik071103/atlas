@@ -4,6 +4,9 @@ import { X } from "lucide-react";
 import { useApp } from "../lib/AppContext";
 import { api } from "../lib/api";
 import { launchCheckout } from "../lib/checkout";
+import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
+import { Input } from "./ui/Input";
 
 type Tab = "guest" | "signin" | "signup";
 
@@ -71,7 +74,7 @@ export function AuthModal() {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 backdrop-blur-sm px-4">
-      <div className="card w-full max-w-md p-6 relative animate-fade-up">
+      <Card className="w-full max-w-md p-6 relative animate-fade-up">
         <button
           onClick={closeAuthModal}
           className="absolute right-4 top-4 text-ink-400 hover:text-ink-800"
@@ -106,10 +109,17 @@ export function AuthModal() {
 
         <form onSubmit={submit} className="mt-5 space-y-3">
           {tab === "signup" && (
-            <Field label="Full name" value={name} onChange={setName} placeholder="Ada Lovelace" />
+            <Input
+              required
+              label="Full name"
+              value={name}
+              onChange={setName}
+              placeholder="Ada Lovelace"
+            />
           )}
           {(tab === "signin" || tab === "signup") && (
-            <Field
+            <Input
+              required
               label="Email"
               type="email"
               value={email}
@@ -124,7 +134,8 @@ export function AuthModal() {
             </p>
           )}
           {(tab === "signin" || tab === "signup") && (
-            <Field
+            <Input
+              required
               label="Password"
               type="password"
               value={password}
@@ -135,49 +146,19 @@ export function AuthModal() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <button type="submit" disabled={busy} className="btn-primary w-full mt-2">
-            {busy
-              ? "Working…"
-              : tab === "guest"
+          <Button type="submit" loading={busy} fullWidth className="mt-2">
+            {tab === "guest"
               ? "Continue as guest"
               : tab === "signin"
               ? "Log in"
               : "Create account"}
-          </button>
+          </Button>
         </form>
 
         <p className="mt-4 text-xs text-ink-400 text-center">
           Demo auth backed by a local SQLite database — no real payment is charged.
         </p>
-      </div>
+      </Card>
     </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold text-ink-600">{label}</span>
-      <input
-        required
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-ink-100 px-3 py-2 text-sm outline-none focus:border-ink-800"
-      />
-    </label>
   );
 }
