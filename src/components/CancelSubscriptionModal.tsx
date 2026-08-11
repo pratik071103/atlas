@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, CalendarClock, OctagonX } from "lucide-react";
+import { X, CalendarClock, OctagonX, Loader2 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
 
@@ -48,7 +48,8 @@ export function CancelSubscriptionModal({ planName, onClose, onConfirm }: Props)
                 <CalendarClock size={17} />
               </span>
               <div>
-                <p className="text-sm font-bold text-ink-900">
+                <p className="flex items-center gap-1.5 text-sm font-bold text-ink-900">
+                  {busy === "schedule" && <Loader2 size={14} className="animate-spin" />}
                   {busy === "schedule" ? "Scheduling…" : "Schedule cancellation"}
                 </p>
                 <p className="text-xs text-ink-600 mt-0.5">
@@ -68,7 +69,8 @@ export function CancelSubscriptionModal({ planName, onClose, onConfirm }: Props)
                 <OctagonX size={17} />
               </span>
               <div>
-                <p className="text-sm font-bold text-ink-900">
+                <p className="flex items-center gap-1.5 text-sm font-bold text-ink-900">
+                  {busy === "immediate" && <Loader2 size={14} className="animate-spin" />}
                   {busy === "immediate" ? "Cancelling…" : "Cancel immediately"}
                 </p>
                 <p className="text-xs text-ink-600 mt-0.5">

@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CreditCard, Wallet, Package, ExternalLink, Settings2, XCircle } from "lucide-react";
+import {
+  CreditCard,
+  Wallet,
+  Package,
+  PackageOpen,
+  ExternalLink,
+  Settings2,
+  XCircle,
+} from "lucide-react";
 import { useApp } from "../lib/AppContext";
 import { api, Purchase } from "../lib/api";
 import { KpiCard } from "../components/KpiCard";
@@ -10,6 +18,7 @@ import { PaymentStatus, PaymentOutcome } from "../components/PaymentStatus";
 import { Button, CtaButton } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
+import { Skeleton } from "../components/ui/Skeleton";
 
 interface PaymentBanner {
   kind: "success" | "failure";
@@ -66,7 +75,36 @@ export function Dashboard() {
   );
 
   if (loadingIdentity || loading) {
-    return <main className="mx-auto max-w-6xl px-6 py-16 text-ink-600">Loading dashboard…</main>;
+    return (
+      <main className="mx-auto max-w-6xl px-6 py-12">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-2.5">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-3 w-48" />
+          </div>
+          <Skeleton className="h-12 w-52 rounded-full" />
+        </div>
+
+        <div className="mt-8 grid sm:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="p-5">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-8 w-8" />
+              </div>
+              <Skeleton className="mt-3 h-8 w-28" />
+              <Skeleton className="mt-2 h-3 w-32" />
+            </Card>
+          ))}
+        </div>
+
+        <div className="mt-8 grid lg:grid-cols-5 gap-6">
+          <Skeleton className="lg:col-span-3 h-72 rounded-xl2" />
+          <Skeleton className="lg:col-span-2 h-72 rounded-xl2" />
+        </div>
+      </main>
+    );
   }
 
   if (!identity) {
@@ -251,13 +289,19 @@ export function Dashboard() {
           </div>
 
           {validPurchases.length === 0 ? (
-            <p className="mt-6 text-sm text-ink-600">
-              Nothing purchased yet.{" "}
-              <Link to="/pricing" className="text-lime-800 font-semibold">
+            <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
+              <span className="grid h-12 w-12 place-items-center rounded-full bg-lime-50 text-lime-700">
+                <PackageOpen size={22} />
+              </span>
+              <p className="mt-3 text-sm font-bold text-ink-900">Nothing purchased yet</p>
+              <p className="mt-1 max-w-xs text-sm text-ink-600">
+                Pick any billing model on the pricing shelf — it lands here the moment payment is
+                confirmed.
+              </p>
+              <Button to="/pricing" variant="secondary" className="mt-4">
                 Browse pricing
-              </Link>{" "}
-              to get started.
-            </p>
+              </Button>
+            </div>
           ) : (
             <ul className="mt-4 divide-y divide-ink-100 max-h-[320px] overflow-y-auto pr-1.5">
               {validPurchases.map((p) => (
