@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Card } from "./ui/Card";
 
 interface Props {
   label: string;
@@ -9,7 +10,7 @@ interface Props {
 
 export function KpiCard({ label, value, hint, icon: Icon }: Props) {
   return (
-    <div className="card p-5">
+    <Card className="p-5">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-400">
           {label}
@@ -20,6 +21,6 @@ export function KpiCard({ label, value, hint, icon: Icon }: Props) {
       </div>
       <p className="mt-2 text-3xl font-semibold font-display text-ink-900">{value}</p>
       {hint && <p className="mt-1 text-xs text-ink-400">{hint}</p>}
-    </div>
+    </Card>
   );
 }

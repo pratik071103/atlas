@@ -7,6 +7,9 @@ import { KpiCard } from "../components/KpiCard";
 import { CreditPromptBar } from "../components/CreditPromptBar";
 import { CancelSubscriptionModal } from "../components/CancelSubscriptionModal";
 import { PaymentStatus, PaymentOutcome } from "../components/PaymentStatus";
+import { Button, CtaButton } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Badge } from "../components/ui/Badge";
 
 interface PaymentBanner {
   kind: "success" | "failure";
@@ -70,15 +73,9 @@ export function Dashboard() {
     return (
       <main className="mx-auto max-w-6xl px-6 py-16 text-center">
         <p className="text-ink-600">You need to sign in to view your dashboard.</p>
-        <Link to="/pricing" className="bc-cta mt-4 inline-flex max-w-xs mx-auto">
-          <span className="bc-cta__label">Go to pricing</span>
-          <span className="bc-cta__arrow" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14" />
-              <path d="M13 6l6 6-6 6" />
-            </svg>
-          </span>
-        </Link>
+        <CtaButton to="/pricing" arrow fullWidth className="mt-4 max-w-xs mx-auto">
+          Go to pricing
+        </CtaButton>
       </main>
     );
   }
@@ -151,20 +148,14 @@ export function Dashboard() {
             {identity.kind === "guest" ? "Guest checkout" : "Registered account"}
           </p>
         </div>
-        <Link to="/pricing" className="bc-cta bc-cta--dark" style={{width: 'auto'}}>
-          <span className="bc-cta__label">Browse more products</span>
-          <span className="bc-cta__arrow" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14" />
-              <path d="M13 6l6 6-6 6" />
-            </svg>
-          </span>
-        </Link>
+        <CtaButton to="/pricing" dark arrow>
+          Browse more products
+        </CtaButton>
       </div>
 
       {paymentBanner && (
-        <div
-          className={`mt-5 card px-4 py-3 text-sm flex items-center justify-between gap-3 ${
+        <Card
+          className={`mt-5 px-4 py-3 text-sm flex items-center justify-between gap-3 ${
             paymentBanner.kind === "success"
               ? "bg-lime-50 border-lime-100 text-lime-900"
               : "bg-red-50 border-red-100 text-red-700"
@@ -184,16 +175,16 @@ export function Dashboard() {
               Dismiss
             </button>
           </div>
-        </div>
+        </Card>
       )}
 
       {actionMsg && (
-        <div className="mt-5 card px-4 py-3 bg-lavender-50 border-lavender-100 text-sm text-lavender-600 flex items-center justify-between gap-3">
+        <Card className="mt-5 px-4 py-3 bg-lavender-50 border-lavender-100 text-sm text-lavender-600 flex items-center justify-between gap-3">
           {actionMsg}
           <button onClick={() => setActionMsg(null)} className="text-lavender-600 font-semibold shrink-0">
             Dismiss
           </button>
-        </div>
+        </Card>
       )}
 
       <div className="mt-8 grid sm:grid-cols-3 gap-4">
@@ -221,13 +212,14 @@ export function Dashboard() {
       </div>
 
       <div className="mt-5 flex flex-wrap gap-3">
-        <button onClick={handlePortal} className="btn-secondary">
+        <Button variant="secondary" onClick={handlePortal}>
           <ExternalLink size={15} /> Customer portal
-        </button>
-        <button onClick={handlePaymentMethod} className="btn-secondary">
+        </Button>
+        <Button variant="secondary" onClick={handlePaymentMethod}>
           <Settings2 size={15} /> Update payment method
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="danger"
           onClick={() =>
             activePlan &&
             activePlan.billing_model === "subscription" &&
@@ -239,14 +231,13 @@ export function Dashboard() {
             activePlan.billing_model !== "subscription" ||
             activePlan.status !== "active"
           }
-          className="btn-secondary hover:border-red-300 hover:text-red-600 disabled:opacity-40"
         >
           <XCircle size={15} /> Cancel subscription
-        </button>
+        </Button>
       </div>
 
       <div className="mt-8 grid lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 card p-5 flex flex-col">
+        <Card className="lg:col-span-3 p-5 flex flex-col">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Package size={16} className="text-lime-700" />
@@ -280,23 +271,23 @@ export function Dashboard() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-ink-900">${p.amount.toFixed(2)}</p>
-                    <span
-                      className={`pill ${
+                    <Badge
+                      tone={
                         p.status === "active"
-                          ? "bg-lime-100 text-lime-800"
+                          ? "lime"
                           : p.status === "scheduled_cancel"
-                          ? "bg-lavender-100 text-lavender-600"
-                          : "bg-ink-100 text-ink-600"
-                      }`}
+                          ? "lavender"
+                          : "ink"
+                      }
                     >
                       {p.status.replace("_", " ")}
-                    </span>
+                    </Badge>
                   </div>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </Card>
 
         <div className="lg:col-span-2">
           <CreditPromptBar balance={balance} onBalanceChange={setBalance} />

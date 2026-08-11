@@ -1,6 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Bot, Send, ImagePlus, Minus, Plus } from "lucide-react";
 import { api } from "../lib/api";
+import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
+import { Badge } from "./ui/Badge";
+import { Input } from "./ui/Input";
 
 interface Message {
   role: "bot" | "user";
@@ -76,7 +80,7 @@ export function CreditPromptBar({ balance, onBalanceChange }: Props) {
   }
 
   return (
-    <div className="card flex flex-col h-full">
+    <Card className="flex flex-col h-full">
       <div className="flex items-center gap-2 border-b border-ink-100 px-4 py-3">
         <span className="grid h-7 w-7 place-items-center rounded-full bg-ink-900 text-lime-300">
           <Bot size={14} />
@@ -85,7 +89,7 @@ export function CreditPromptBar({ balance, onBalanceChange }: Props) {
           <p className="text-sm font-bold text-ink-900">Credit prompt bar</p>
           <p className="text-xs text-ink-600">Demo only — debit / credit / amount</p>
         </div>
-        <span className="ml-auto pill bg-lime-100 text-lime-800">{balance} credits</span>
+        <Badge className="ml-auto">{balance} credits</Badge>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 max-h-56 min-h-56">
@@ -103,16 +107,17 @@ export function CreditPromptBar({ balance, onBalanceChange }: Props) {
 
       <div className="border-t border-ink-100 px-4 py-3 space-y-3">
         <form onSubmit={submit} className="flex items-center gap-2">
-          <input
+          <Input
+            shape="pill"
             value={input}
             disabled={busy}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={setInput}
             placeholder="debit 5  ·  credit 10"
-            className="flex-1 rounded-full border border-ink-200 px-4 py-2 text-sm outline-none focus:border-ink-900"
+            className="flex-1"
           />
-          <button type="submit" disabled={busy} className="btn-dark px-3 py-2 rounded-full">
+          <Button variant="dark" type="submit" disabled={busy} className="px-3 py-2">
             <Send size={15} />
-          </button>
+          </Button>
         </form>
 
         <div className="flex items-center gap-2 rounded-full border border-ink-200 pl-1.5 pr-2 py-1.5">
@@ -136,16 +141,15 @@ export function CreditPromptBar({ balance, onBalanceChange }: Props) {
               <Plus size={12} />
             </button>
           </div>
-          <button
-            type="button"
+          <Button
             disabled={busy || genCount > balance}
             onClick={generateImages}
-            className="btn-primary px-3 py-1.5 text-xs rounded-full shrink-0"
+            className="px-3 py-1.5 text-xs shrink-0"
           >
             Gen {genCount} image{genCount === 1 ? "" : "s"}
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
