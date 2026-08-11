@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Sparkle } from "lucide-react";
 import { useApp } from "../lib/AppContext";
+import { Button } from "./ui/Button";
+import { Badge } from "./ui/Badge";
 
 export function Navbar() {
   const { identity, signOut, openAuthModal } = useApp();
@@ -41,27 +43,27 @@ export function Navbar() {
               <span className="hidden sm:inline text-sm text-ink-600">
                 {identity.name?.split(" ")[0] ?? "Guest"}
                 {identity.kind === "guest" && (
-                  <span className="pill bg-ink-100 text-ink-600 ml-2">Guest</span>
+                  <Badge tone="ink" className="ml-2">
+                    Guest
+                  </Badge>
                 )}
               </span>
-              <button
-                className="btn-secondary"
+              <Button
+                variant="secondary"
                 onClick={async () => {
                   await signOut();
                   navigate("/");
                 }}
               >
                 Sign out
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button className="rounded-full border border-ink-200 px-5 py-2.5 text-sm font-semibold text-ink-800 hover:border-ink-800" onClick={() => openAuthModal()}>
+              <Button variant="secondary" onClick={() => openAuthModal()}>
                 Login
-              </button>
-              <Link to="/pricing" className="btn-primary">
-                Start generating
-              </Link>
+              </Button>
+              <Button to="/pricing">Start generating</Button>
             </>
           )}
         </div>

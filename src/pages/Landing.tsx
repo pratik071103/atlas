@@ -1,5 +1,6 @@
-import { Link } from "react-router-dom";
 import { Zap, ShieldCheck, Layers } from "lucide-react";
+import { Button, CtaButton } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
 
 export function Landing() {
   return (
@@ -21,12 +22,10 @@ export function Landing() {
           top-ups.
         </p>
         <div className="mt-9 flex items-center justify-center gap-3">
-          <Link to="/pricing" className="bc-cta bc-cta--centered" style={{ width: "auto" }}>
-            <span className="bc-cta__label">See pricing</span>
-          </Link>
-          <Link to="/pricing" className="btn-secondary text-base px-6 py-3.5">
+          <CtaButton to="/pricing">See pricing</CtaButton>
+          <Button to="/pricing" variant="secondary" size="lg">
             Try as guest
-          </Link>
+          </Button>
         </div>
       </section>
 
@@ -55,13 +54,13 @@ export function Landing() {
               iconTint: "text-lime-800",
             },
           ].map(({ icon: Icon, title, body, tint, iconTint }) => (
-            <div key={title} className="card p-6">
+            <Card key={title} className="p-6">
               <span className={`grid h-10 w-10 place-items-center rounded-xl ${tint} ${iconTint}`}>
                 <Icon size={19} strokeWidth={2.25} />
               </span>
               <h3 className="mt-4 text-base font-bold text-ink-900">{title}</h3>
               <p className="mt-1.5 text-sm text-ink-600">{body}</p>
-            </div>
+            </Card>
           ))}
         </div>
       </section>
