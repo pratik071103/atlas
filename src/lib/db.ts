@@ -106,6 +106,13 @@ export interface PurchaseDoc {
   creditBucket: CreditBucket;
   /** Dodo product id the purchase was created against, for plan changes. */
   dodoProductId: string | null;
+  /**
+   * Tier an upgrade/downgrade was requested for but Dodo has not confirmed
+   * yet. Set when the change-plan call succeeds, cleared by the
+   * subscription.plan_changed webhook — which is what lets the UI say "moving
+   * to Pro" instead of pretending it already happened.
+   */
+  pendingTierId?: string | null;
   dodoSessionId: string | null;
   dodoPaymentId: string | null;
   dodoSubscriptionId: string | null;

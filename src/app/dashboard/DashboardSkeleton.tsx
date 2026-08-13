@@ -35,7 +35,10 @@ export function DashboardSkeleton() {
           <Skeleton className="h-44 rounded-xl2" />
           <Skeleton className="h-72 rounded-xl2" />
         </div>
-        <Skeleton className="h-[26rem] rounded-xl2 lg:col-span-2" />
+        <div className="space-y-6 lg:col-span-2">
+          <Skeleton className="h-64 rounded-xl2" />
+          <Skeleton className="h-72 rounded-xl2" />
+        </div>
       </div>
     </main>
   );

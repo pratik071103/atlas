@@ -194,6 +194,7 @@ export interface PurchaseView {
   creditsGranted: number;
   creditBucket: CreditBucket;
   dodoSubscriptionId: string | null;
+  pendingTierId: string | null;
   simulated: boolean;
   createdAt: string;
 }
@@ -212,6 +213,7 @@ export function toPurchaseView(p: PurchaseDoc): PurchaseView {
     creditsGranted: p.creditsGranted,
     creditBucket: p.creditBucket,
     dodoSubscriptionId: p.dodoSubscriptionId,
+    pendingTierId: p.pendingTierId ?? null,
     simulated: p.simulated,
     createdAt: p.createdAt.toISOString(),
   };
@@ -312,6 +314,8 @@ export async function repointPurchaseTier(
   const c = await getCollections();
   await c.purchases.updateOne(
     { _id: purchaseId },
-    { $set: { ...tier, updatedAt: new Date() } }
+    // Clearing pendingTierId here is what retires the "moving to Pro…" banner:
+    // the change has landed, whether it came from this app or the portal.
+    { $set: { ...tier, pendingTierId: null, updatedAt: new Date() } }
   );
 }

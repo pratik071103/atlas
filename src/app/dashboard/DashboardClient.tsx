@@ -9,6 +9,7 @@ import { KpiCard } from "@/components/KpiCard";
 import { PaymentStatus, type PaymentOutcome } from "@/components/PaymentStatus";
 import { PlaygroundButtons } from "@/components/PlaygroundButtons";
 import { PurchaseLibrary } from "@/components/PurchaseLibrary";
+import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useSession } from "@/components/SessionProvider";
 import { CtaButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -118,7 +119,7 @@ export function DashboardClient() {
   const activePlan =
     purchases.find(
       (p) =>
-        p.billingModel === "subscription" &&
+        (p.billingModel === "subscription" || p.billingModel === "seat_based") &&
         (p.status === "active" || p.status === "scheduled_cancel")
     ) ?? null;
 
@@ -211,7 +212,8 @@ export function DashboardClient() {
           />
           <PurchaseLibrary purchases={purchases} />
         </div>
-        <div className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
+          <SubscriptionCard subscription={activePlan} onChanged={() => void load()} />
           <EventLogPanel
             events={data?.usageEvents ?? []}
             simulated={data?.simulated ?? true}

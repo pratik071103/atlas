@@ -34,6 +34,8 @@ export interface Purchase {
   creditsGranted: number;
   creditBucket: CreditBucket;
   dodoSubscriptionId: string | null;
+  /** Set while an upgrade/downgrade is waiting on Dodo to confirm it. */
+  pendingTierId: string | null;
   simulated: boolean;
   createdAt: string;
 }
@@ -143,4 +145,16 @@ export const api = {
     }),
 
   getUsageEvents: () => request<{ events: UsageEvent[] }>("/usage/events"),
+
+  changePlan: (purchaseId: string, tierId: string) =>
+    request<{ applied: boolean; pendingTierId: string; productName: string }>(
+      `/billing/subscription/${purchaseId}/change-plan`,
+      { method: "POST", body: JSON.stringify({ tierId }) }
+    ),
+
+  cancelSubscription: (purchaseId: string, mode: "immediate" | "schedule") =>
+    request<{ status: string }>(`/billing/subscription/${purchaseId}/cancel`, {
+      method: "PATCH",
+      body: JSON.stringify({ mode }),
+    }),
 };
