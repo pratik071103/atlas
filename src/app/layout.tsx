@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter, Space_Grotesk } from "next/font/google";
-import { Navbar } from "@/components/Navbar";
+import { AuthModal } from "@/components/AuthModal";
 import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
+import { SessionProvider } from "@/components/SessionProvider";
 import "./globals.css";
 
 // next/font self-hosts the files and emits a `size-adjust` fallback, so the
@@ -36,9 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="min-h-screen flex flex-col bg-ink-50 font-body text-ink-900 antialiased">
-        <Navbar />
-        <div className="flex-1 flex flex-col">{children}</div>
-        <Footer />
+        <SessionProvider>
+          <Navbar />
+          <div className="flex-1 flex flex-col">{children}</div>
+          <Footer />
+          <AuthModal />
+        </SessionProvider>
       </body>
     </html>
   );
