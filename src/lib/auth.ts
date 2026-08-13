@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { mongoDb } from "@/lib/db";
 import { getDodoClient, SIMULATE_PAYMENTS } from "@/lib/dodo";
 import { reassignOwner } from "@/lib/services/linking";
+import { webhookHandlers } from "@/lib/services/webhook-handlers";
 
 // ---------------------------------------------------------------------------
 // Better Auth + the official Dodo Payments adapter.
@@ -73,11 +74,7 @@ export const auth = betterAuth({
         usage(),
         webhooks({
           webhookKey: process.env.DODO_WEBHOOK_SECRET ?? "",
-          // Business logic lands here in a later commit; for now every
-          // verified delivery is logged so the endpoint can be smoke-tested.
-          onPayload: async (payload: { type?: string }) => {
-            console.log(`[webhook] ${payload?.type ?? "unknown"}`);
-          },
+          ...webhookHandlers,
         }),
       ],
     }),

@@ -249,3 +249,69 @@ export async function getPurchase(
   const c = await getCollections();
   return c.purchases.findOne({ _id: purchaseId, userId });
 }
+
+/**
+ * Locates the purchase a Dodo event refers to, trying the most reliable
+ * correlation first.
+ *
+ * Sessions are the strongest link because we minted the id ourselves and Dodo
+ * echoes it onto payment objects. Subscription ids only work once an earlier
+ * event has taught us which purchase a subscription belongs to, and our own
+ * metadata is the fallback for events that carry neither.
+ */
+export async function findPurchaseForEvent(
+  data: Record<string, unknown> | undefined
+): Promise<PurchaseDoc | null> {
+  if (!data || typeof data !== "object") return null;
+  const c = await getCollections();
+
+  const sessionId = data.checkout_session_id;
+  if (typeof sessionId === "string") {
+    const bySession = await c.purchases.findOne({ dodoSessionId: sessionId });
+    if (bySession) return bySession;
+  }
+
+  const subscriptionId = data.subscription_id;
+  if (typeof subscriptionId === "string") {
+    const bySubscription = await c.purchases.findOne({ dodoSubscriptionId: subscriptionId });
+    if (bySubscription) return bySubscription;
+  }
+
+  const paymentId = data.payment_id;
+  if (typeof paymentId === "string") {
+    const byPayment = await c.purchases.findOne({ dodoPaymentId: paymentId });
+    if (byPayment) return byPayment;
+  }
+
+  const metadata = data.metadata as { purchaseId?: unknown } | undefined;
+  if (metadata && typeof metadata.purchaseId === "string") {
+    const byMetadata = await c.purchases.findOne({ _id: metadata.purchaseId });
+    if (byMetadata) return byMetadata;
+  }
+
+  return null;
+}
+
+/**
+ * Repoints a purchase at a different catalog tier after a Dodo plan change.
+ * The caller refreshes the plan allowance afterwards; recomputing it from the
+ * updated rows is what makes an upgrade and a downgrade the same code path.
+ */
+export async function repointPurchaseTier(
+  purchaseId: string,
+  tier: {
+    productId: string;
+    tierId: string;
+    productName: string;
+    amount: number;
+    creditsGranted: number;
+    creditBucket: CreditBucket;
+    dodoProductId: string;
+  }
+): Promise<void> {
+  const c = await getCollections();
+  await c.purchases.updateOne(
+    { _id: purchaseId },
+    { $set: { ...tier, updatedAt: new Date() } }
+  );
+}

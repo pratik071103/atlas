@@ -64,6 +64,15 @@ export interface CheckoutStatus {
   simulated: boolean;
 }
 
+export interface WebhookEventRow {
+  id: string;
+  eventType: string;
+  status: string;
+  eventId: string | null;
+  createdAt: string;
+  payloadPreview: string;
+}
+
 export interface BillingSnapshot {
   identity: SessionIdentitySummary;
   wallet: WalletBalance;
@@ -102,4 +111,6 @@ export const api = {
 
   getCheckoutStatus: (purchaseId: string) =>
     request<CheckoutStatus>(`/checkout/${purchaseId}/status`),
+
+  getWebhookEvents: () => request<{ events: WebhookEventRow[] }>("/webhooks/events"),
 };
