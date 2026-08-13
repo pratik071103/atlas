@@ -79,6 +79,21 @@ export interface UsageEvent {
   createdAt: string;
 }
 
+export type LicenseStatus = "issued" | "active" | "expired" | "deactivated";
+
+export interface License {
+  id: string;
+  key: string;
+  productName: string;
+  status: LicenseStatus;
+  instanceId: string | null;
+  instanceName: string | null;
+  simulated: boolean;
+  activatedAt: string | null;
+  lastValidatedAt: string | null;
+  createdAt: string;
+}
+
 export interface WebhookEventRow {
   id: string;
   eventType: string;
@@ -156,5 +171,25 @@ export const api = {
     request<{ status: string }>(`/billing/subscription/${purchaseId}/cancel`, {
       method: "PATCH",
       body: JSON.stringify({ mode }),
+    }),
+
+  getLicenses: () => request<{ licenses: License[]; unlocked: boolean }>("/license"),
+
+  activateLicense: (key: string) =>
+    request<{ license: License }>("/license/activate", {
+      method: "POST",
+      body: JSON.stringify({ key }),
+    }),
+
+  validateLicense: (key: string) =>
+    request<{ valid: boolean; license: License | null; message: string }>("/license/validate", {
+      method: "POST",
+      body: JSON.stringify({ key }),
+    }),
+
+  deactivateLicense: (key: string) =>
+    request<{ license: License }>("/license/deactivate", {
+      method: "POST",
+      body: JSON.stringify({ key }),
     }),
 };

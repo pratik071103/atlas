@@ -9,6 +9,7 @@ import {
 import { newId } from "@/lib/db";
 import { appUrl, getDodoClient, SIMULATE_PAYMENTS } from "@/lib/dodo";
 import { fail, readJson, withIdentity } from "@/lib/http";
+import { issueSimulatedLicense } from "@/lib/services/licenses";
 import { activatePurchase, createPurchase } from "@/lib/services/purchases";
 
 // ---------------------------------------------------------------------------
@@ -78,6 +79,10 @@ export async function POST(request: Request) {
     if (SIMULATE_PAYMENTS) {
       await createPurchase({ ...base, simulated: true });
       await activatePurchase(purchaseId, `Purchase: ${productName}`);
+
+      // Live, Dodo mints the key and delivers it on license_key.created.
+      // Offline there is nothing to do that, so the pass issues its own.
+      if (product.grantsLicense) await issueSimulatedLicense(identity.userId);
 
       return NextResponse.json(
         { purchaseId, simulated: true, checkoutUrl: null, sessionId: null },

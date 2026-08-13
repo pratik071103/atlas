@@ -2,6 +2,7 @@ import "server-only";
 
 import { CATALOG, creditBucketFor, type PriceTier, type Product } from "@shared/catalog";
 import { getCollections, newId, type PurchaseDoc } from "@/lib/db";
+import { recordIssuedLicense } from "./licenses";
 import {
   activatePurchase,
   findPurchaseForEvent,
@@ -278,11 +279,28 @@ export const webhookHandlers = {
   },
 
   // ---- Entitlements --------------------------------------------------------
-  // Dodo issues the license key for the Studio Pass out of band. Recording it
-  // against the buyer is the licenses service's job and lands with that commit;
-  // for now the delivery is audited like every other event.
+  /**
+   * Dodo mints the Studio Pass key when the payment settles and delivers it
+   * here. Storing it against the buyer is what lets /studio show them the key
+   * to activate — they never have to go and find it in an email.
+   *
+   * The key is correlated to a customer through the purchase the payment or
+   * subscription id belongs to, since Dodo's customer id is not this app's
+   * user id.
+   */
   onLicenseKeyCreated: async (payload: WebhookPayload) => {
-    console.log(`[webhook] license key created: ${String(payload.data?.id ?? "unknown")}`);
+    const data = payload.data ?? {};
+    const key = typeof data.key === "string" ? data.key : null;
+    if (!key) {
+      console.warn("[webhook] license_key.created carried no key");
+      return;
+    }
+
+    const purchase = await resolve("license_key.created", payload);
+    if (!purchase) return;
+
+    await recordIssuedLicense(purchase.userId, key, purchase.productName);
+    console.log(`[webhook] license key stored for ${purchase.userId}`);
   },
 
   onEntitlementGrantDelivered: async (payload: WebhookPayload) => {
