@@ -1,5 +1,15 @@
-.dbdata/
 .env
 .env.local
 node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# legacy Vite/SQLite build artifacts
 dist/
+.dbdata/
+
+# TypeScript incremental build info
+*.tsbuildinfo

@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "@/lib/cn";
 
-type Tone = "lime" | "lime-solid" | "lavender" | "ink" | "dark" | "red";
+type Tone = "lime" | "lime-solid" | "lavender" | "ink" | "dark" | "red" | "amber";
 
 const TONE: Record<Tone, string> = {
   lime: "bg-lime-100 text-lime-800",
@@ -10,6 +10,7 @@ const TONE: Record<Tone, string> = {
   ink: "bg-ink-100 text-ink-600",
   dark: "bg-ink-900 text-white",
   red: "bg-red-50 text-red-600",
+  amber: "bg-amber-50 text-amber-700",
 };
 
 interface Props {

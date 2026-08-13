@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { Sparkle } from "lucide-react";
 
 export function Footer() {
@@ -18,14 +18,17 @@ export function Footer() {
         </div>
 
         <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-ink-600">
-          <Link to="/" className="hover:text-ink-900">
+          <Link href="/" className="hover:text-ink-900">
             Home
           </Link>
-          <Link to="/pricing" className="hover:text-ink-900">
+          <Link href="/pricing" className="hover:text-ink-900">
             Pricing
           </Link>
-          <Link to="/dashboard" className="hover:text-ink-900">
+          <Link href="/dashboard" className="hover:text-ink-900">
             Dashboard
+          </Link>
+          <Link href="/studio" className="hover:text-ink-900">
+            Studio
           </Link>
           <a
             href="https://dodopayments.com"

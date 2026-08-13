@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-family: theme("fontFamily.body");
+  }
   h1,
   h2,
   h3,
@@ -65,7 +68,7 @@
   padding: 0 8px 0 22px;
   background: var(--bc-cta-bg);
   color: var(--bc-cta-ink);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: theme("fontFamily.body");
   font-weight: 700;
   font-size: 0.875rem;
   line-height: 1;
@@ -305,7 +308,7 @@
   white-space: nowrap;
   background-color: #0c0f0c;
   color: #ffffff;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: theme("fontFamily.body");
   font-size: 0.75rem;
   font-weight: 600;
   padding: 4px 10px;
@@ -320,4 +323,3 @@
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
-

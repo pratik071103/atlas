@@ -1,7 +1,9 @@
+"use client";
+
 import { ButtonHTMLAttributes, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { cn } from "../../lib/cn";
+import { cn } from "@/lib/cn";
 
 type Variant = "primary" | "secondary" | "dark" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -26,7 +28,8 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "typ
   size?: Size;
   loading?: boolean;
   fullWidth?: boolean;
-  to?: string;
+  /** Renders a next/link anchor instead of a <button>. */
+  href?: string;
   type?: "button" | "submit" | "reset";
 }
 
@@ -35,7 +38,7 @@ export function Button({
   size = "md",
   loading = false,
   fullWidth = false,
-  to,
+  href,
   className,
   children,
   disabled,
@@ -43,9 +46,9 @@ export function Button({
 }: ButtonProps) {
   const classes = cn(VARIANT[variant], SIZE[size], fullWidth && "w-full", className);
 
-  if (to) {
+  if (href) {
     return (
-      <Link to={to} className={classes}>
+      <Link href={href} className={classes}>
         {children}
       </Link>
     );
@@ -82,7 +85,7 @@ interface CtaButtonProps {
   loading?: boolean;
   fullWidth?: boolean;
   disabled?: boolean;
-  to?: string;
+  href?: string;
   onClick?: () => void;
   className?: string;
 }
@@ -94,7 +97,7 @@ export function CtaButton({
   loading = false,
   fullWidth = false,
   disabled = false,
-  to,
+  href,
   onClick,
   className,
 }: CtaButtonProps) {
@@ -114,9 +117,9 @@ export function CtaButton({
     </span>
   );
 
-  if (to) {
+  if (href) {
     return (
-      <Link to={to} className={classes} style={style}>
+      <Link href={href} className={classes} style={style}>
         {label}
         {arrow && ARROW}
       </Link>

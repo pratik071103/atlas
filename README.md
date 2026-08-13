@@ -1,9 +1,10 @@
 # Atlas Studio — Dodo Payments Frontend Reference
 
-A frontend-only reference build for a Dodo Payments SaaS integration, styled after
-the pricing-page reference you shared. It's a real, running app (React + Express +
-SQLite) — checkout and webhook handling are deliberately stubbed so you can drop
-in real Dodo Payments calls later without restructuring anything.
+A reference build for a Dodo Payments SaaS integration (React + Express +
+SQLite). Checkout, webhooks, the customer portal, and usage metering all call
+the real Dodo Payments API — via the `dodopayments` SDK and the official
+**Better Auth adapter** (`@dodopayments/better-auth`). With no API key
+configured the app falls back to simulated purchases so it still runs offline.
 
 ## What's included
 
@@ -41,26 +42,32 @@ shared/catalog.ts          Product catalog — the single source of truth for pr
                             imported by both the frontend and the server.
 
 src/
-  pages/                   Landing, Pricing, Dashboard
+  pages/                   Landing, Pricing, Dashboard, DevWebhooks
   components/              Navbar, PricingCard, PricingToggle, CheckoutModeSwitch,
-                            AuthModal, KpiCard, CreditChatbot
+                            AuthModal, KpiCard, CreditPromptBar, PaymentStatus
   lib/
-    api.ts                 Typed fetch client for the Express API
+    authClient.ts           Better Auth browser client + Dodo client plugin
+                            (session, sign-in/up, customer portal, usage ingest)
+    api.ts                  Typed fetch client for the app's own billing routes
     AppContext.tsx          Session identity + pending-checkout-intent state
     catalog.ts              Re-exports shared/catalog.ts
 
 server/
-  index.ts                 Express app: middleware, route mounting, static serving
-  db.ts                    SQLite schema (users, sessions, purchases, credit_ledger,
-                            webhook_events)
+  index.ts                 Express app; mounts Better Auth at /api/auth/* BEFORE
+                            express.json() so webhook signatures verify
+  db.ts                    App schema (purchases, credit_ledger, webhook_events).
+                            Identity tables are owned by Better Auth.
   lib/
-    auth.ts                Password hashing + session cookie helpers
-    webhookVerify.ts        Standard Webhooks HMAC signature verification
+    auth.ts                 Better Auth instance: email/password, anonymous
+                            guests, and the Dodo adapter (portal, usage, webhooks)
+    webhookHandlers.ts      Typed handlers for payment / subscription / refund /
+                            dispute events
+    credits.ts              Transactional credit ledger helpers
+    dodo.ts                 Shared Dodo SDK client
   routes/
-    auth.ts                 Sign up / sign in / guest / sign out / session
-    checkout.ts              << integrate real Dodo checkout session creation here
-    billing.ts               Dashboard data + demo credit debit/credit endpoint
-    webhooks.ts               << point your Dodo webhook endpoint here
+    checkout.ts             Creates real Dodo checkout sessions
+    billing.ts              Dashboard data, demo credits, real subscription cancel
+    webhooks.ts             Dev-only webhook inspector (read-only)
   data/products.ts          Re-exports shared/catalog.ts
 ```
 
@@ -97,34 +104,63 @@ wired to the real Dodo Payments API:
 3. Expose the API to the internet so Dodo can deliver webhooks:
    `ngrok http 8787` (or `cloudflared tunnel --url http://localhost:8787`),
    then set the webhook URL in the Dodo dashboard to
-   `https://<tunnel>/api/webhooks/dodo` with the signing secret.
+   `https://<tunnel>/api/auth/dodopayments/webhooks` with the signing secret.
+   (The endpoint moved when the Better Auth adapter took over verification —
+   update it if you configured the old `/api/webhooks/dodo` path.)
 4. `npm run dev` and buy any tier in all three checkout modes. Test cards:
    `4000 0000 0000 0002` = success, `4000 0000 0000 0008` = decline.
 
-## Auth note
+## Auth
 
-You asked for **Better Auth**. This build uses a hand-rolled email/password +
-guest-session system instead (scrypt password hashing, httpOnly session
-cookies, SQLite-backed) — same responsibilities, same shape, just implemented
-by hand in `server/lib/auth.ts` and `server/routes/auth.ts` so the whole flow
-is inspectable in two files and doesn't depend on a library migration step I
-couldn't test live. Swapping in the real `better-auth` package later is a
-contained change: replace those two files with `betterAuth({ database: ... })`
-+ its Express handler, keeping the same `/api/auth/*` routes the frontend
-already calls.
+**Better Auth** with the official Dodo Payments adapter
+(`@dodopayments/better-auth`), configured in `server/lib/auth.ts`. It owns
+every `/api/auth/*` route, and the adapter contributes four things:
+
+- `createCustomerOnSignUp` — a real Dodo customer, linked on `user.dodoCustomerId`
+- `portal()` — a real customer-portal session (`authClient.dodopayments.customer.portal()`)
+- `usage()` — usage-event ingestion + meters, for the usage-based product
+- `webhooks()` — the verified webhook endpoint, with ~45 typed event handlers
+
+**Guests are anonymous Better Auth users** (the `anonymous` plugin) rather than
+a parallel session type, so there's one identity model. `onLinkAccount` moves a
+guest's purchases and credit ledger onto their new account when they sign up —
+previously those rows were orphaned.
+
+One trade-off worth knowing: with live credentials, `createCustomerOnSignUp`
+fires for anonymous guests too, so every "continue as guest" creates a Dodo
+customer. Set it to `false` in `server/lib/auth.ts` and create the customer at
+first checkout if that clutters your dashboard.
 
 ## Database note
 
-This uses Node's **built-in `node:sqlite` module** rather than a native npm
-package like `better-sqlite3` — no `node-gyp`/Visual Studio/build-tools
-requirement, so `npm install` works out of the box on Windows, macOS, and
-Linux. Requires **Node 22.5+** (you're on a recent Node, so you're covered).
-You'll see an `ExperimentalWarning: SQLite is an experimental feature` line
-on startup — that's expected and harmless.
+**better-sqlite3**, because Better Auth's built-in adapter takes the instance
+directly (`betterAuth({ database })`) with no Kysely/Drizzle wiring. It ships
+prebuilt binaries, so no `node-gyp`/Visual Studio is needed.
 
-## What's intentionally not real
+Newer npm versions gate package install scripts. If a fresh clone fails to load
+the binding, run:
 
-- No real payments are processed — checkout "completes" instantly and grants
-  credits/entitlements directly, per the app's own database.
-- Passwords, sessions, and billing are all local-only demo data in
-  `server/data/atlas.db` (gitignored).
+```bash
+npm approve-scripts better-sqlite3 && npm rebuild better-sqlite3
+```
+
+Identity tables (`user`, `session`, `account`, `verification`) are created by
+Better Auth's CLI, not by `db.ts`:
+
+```bash
+npx @better-auth/cli migrate --config server/lib/auth.ts
+```
+
+The database file lives at `.dbdata/atlas.db` (gitignored). A pre-existing
+database from the hand-rolled-auth version is detected on boot and its demo
+tables are rebuilt.
+
+## What's simulated
+
+- With no `DODO_API_KEY` (or `SIMULATE_PAYMENTS=1`), checkout completes
+  instantly and grants credits locally — no Dodo call is made.
+- The dashboard "credit prompt bar" is a demo device for moving the local
+  ledger. Real metered usage is additionally reported to Dodo via
+  `authClient.dodopayments.usage.ingest()`.
+- Product ids in `shared/catalog.ts` are placeholders except the one-time
+  pack — create the rest in your Dodo dashboard before demoing live.
