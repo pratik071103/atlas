@@ -4,13 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Coins, Package, Wallet } from "lucide-react";
+import { EventLogPanel } from "@/components/EventLogPanel";
 import { KpiCard } from "@/components/KpiCard";
 import { PaymentStatus, type PaymentOutcome } from "@/components/PaymentStatus";
+import { PlaygroundButtons } from "@/components/PlaygroundButtons";
 import { PurchaseLibrary } from "@/components/PurchaseLibrary";
 import { useSession } from "@/components/SessionProvider";
 import { CtaButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { api, type BillingSnapshot } from "@/lib/api";
+import { api, type BillingSnapshot, type UsageEvent, type WalletBalance } from "@/lib/api";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 
 interface Banner {
@@ -63,6 +65,25 @@ export function DashboardClient() {
     }
     void load().finally(() => setLoading(false));
   }, [identity, sessionLoading, load]);
+
+  // The playground updates the wallet optimistically off its own response, so
+  // the credit meters move on the click rather than after a dashboard reload.
+  const applyWallet = useCallback((wallet: WalletBalance) => {
+    setData((prev) => (prev ? { ...prev, wallet } : prev));
+  }, []);
+
+  // Events arrive twice — once on the spend, once when the ingest settles —
+  // so the second one replaces the first rather than stacking on top of it.
+  const applyEvent = useCallback((event: UsageEvent) => {
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            usageEvents: [event, ...prev.usageEvents.filter((e) => e.id !== event.id)],
+          }
+        : prev
+    );
+  }, []);
 
   const handlePaymentResolved = useCallback(
     (outcome: PaymentOutcome) => {
@@ -180,8 +201,22 @@ export function DashboardClient() {
         />
       </div>
 
-      <div className="mt-8">
-        <PurchaseLibrary purchases={purchases} />
+      <div className="mt-8 grid gap-6 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
+          <PlaygroundButtons
+            wallet={wallet}
+            simulated={data?.simulated ?? true}
+            onWalletChange={applyWallet}
+            onEvent={applyEvent}
+          />
+          <PurchaseLibrary purchases={purchases} />
+        </div>
+        <div className="lg:col-span-2">
+          <EventLogPanel
+            events={data?.usageEvents ?? []}
+            simulated={data?.simulated ?? true}
+          />
+        </div>
       </div>
 
       {checkoutId && (

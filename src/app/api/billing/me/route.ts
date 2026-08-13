@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { SIMULATE_PAYMENTS } from "@/lib/dodo";
 import { withIdentity } from "@/lib/http";
 import { expireStaleCheckouts, listPurchases } from "@/lib/services/purchases";
+import { listUsageEvents } from "@/lib/services/usage";
 import { getLedger, getWallet } from "@/lib/services/wallet";
 
 // GET /api/billing/me — everything the dashboard and profile render from.
@@ -8,13 +10,17 @@ export async function GET() {
   return withIdentity(async (identity) => {
     await expireStaleCheckouts(identity.userId);
 
-    const [wallet, purchases, ledger] = await Promise.all([
+    const [wallet, purchases, ledger, usageEvents] = await Promise.all([
       getWallet(identity.userId),
       listPurchases(identity.userId),
       getLedger(identity.userId),
+      listUsageEvents(identity.userId),
     ]);
 
     return NextResponse.json({
+      // Lets the browser skip the Dodo ingest call it knows cannot land, and
+      // label the event log honestly instead of showing a failure.
+      simulated: SIMULATE_PAYMENTS,
       identity: {
         id: identity.userId,
         kind: identity.isAnonymous ? "guest" : "user",
@@ -26,6 +32,7 @@ export async function GET() {
       wallet,
       purchases,
       ledger,
+      usageEvents,
     });
   });
 }

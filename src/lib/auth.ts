@@ -44,6 +44,21 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
+  databaseHooks: {
+    user: {
+      create: {
+        // Accounts are marked verified at creation for the same reason
+        // verification is not required — there is nowhere to send the email.
+        //
+        // This is not cosmetic: the adapter's usage plugin refuses both
+        // /usage/ingest and /usage/meters/list for an unverified user, so the
+        // metering half of the demo would 401 for everyone, guests included.
+        // Remove this hook the moment you wire a real email provider.
+        before: async (user) => ({ data: { ...user, emailVerified: true } }),
+      },
+    },
+  },
+
   plugins: [
     anonymous({
       emailDomainName: "guest.atlas.local",

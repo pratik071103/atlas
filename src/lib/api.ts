@@ -64,6 +64,19 @@ export interface CheckoutStatus {
   simulated: boolean;
 }
 
+export type IngestStatus = "pending" | "ok" | "simulated" | "failed";
+
+export interface UsageEvent {
+  id: string;
+  eventName: string;
+  label: string;
+  credits: number;
+  bucket: CreditBucket | null;
+  ingestStatus: IngestStatus;
+  ingestMessage: string | null;
+  createdAt: string;
+}
+
 export interface WebhookEventRow {
   id: string;
   eventType: string;
@@ -74,10 +87,13 @@ export interface WebhookEventRow {
 }
 
 export interface BillingSnapshot {
+  /** True when the server has no Dodo API key, so nothing reaches the network. */
+  simulated: boolean;
   identity: SessionIdentitySummary;
   wallet: WalletBalance;
   purchases: Purchase[];
   ledger: LedgerEntry[];
+  usageEvents: UsageEvent[];
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -113,4 +129,18 @@ export const api = {
     request<CheckoutStatus>(`/checkout/${purchaseId}/status`),
 
   getWebhookEvents: () => request<{ events: WebhookEventRow[] }>("/webhooks/events"),
+
+  runPlaygroundAction: (actionId: string) =>
+    request<{ wallet: WalletBalance; event: UsageEvent }>("/billing/credits/spend", {
+      method: "POST",
+      body: JSON.stringify({ actionId }),
+    }),
+
+  recordIngestResult: (eventId: string, status: IngestStatus, message?: string) =>
+    request<{ event: UsageEvent }>(`/usage/${eventId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, message }),
+    }),
+
+  getUsageEvents: () => request<{ events: UsageEvent[] }>("/usage/events"),
 };

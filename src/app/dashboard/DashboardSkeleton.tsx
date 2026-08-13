@@ -30,7 +30,13 @@ export function DashboardSkeleton() {
         ))}
       </div>
 
-      <Skeleton className="mt-8 h-72 rounded-xl2" />
+      <div className="mt-8 grid gap-6 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
+          <Skeleton className="h-44 rounded-xl2" />
+          <Skeleton className="h-72 rounded-xl2" />
+        </div>
+        <Skeleton className="h-[26rem] rounded-xl2 lg:col-span-2" />
+      </div>
     </main>
   );
 }
