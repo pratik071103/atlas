@@ -159,8 +159,6 @@ export const api = {
       body: JSON.stringify({ status, message }),
     }),
 
-  getUsageEvents: () => request<{ events: UsageEvent[] }>("/usage/events"),
-
   changePlan: (purchaseId: string, tierId: string) =>
     request<{ applied: boolean; pendingTierId: string; productName: string }>(
       `/billing/subscription/${purchaseId}/change-plan`,

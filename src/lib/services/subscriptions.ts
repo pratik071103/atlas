@@ -1,6 +1,6 @@
 import "server-only";
 
-import { creditBucketFor, findProduct, type PriceTier, type Product } from "@shared/catalog";
+import { creditBucketFor, findProduct, type Product } from "@shared/catalog";
 import { getCollections, type PurchaseDoc } from "@/lib/db";
 import { getDodoClient, SIMULATE_PAYMENTS } from "@/lib/dodo";
 import {
@@ -27,13 +27,6 @@ export class SubscriptionError extends Error {
     super(message);
     this.name = "SubscriptionError";
   }
-}
-
-/** Every tier a subscription can move to — its own product's, minus itself. */
-export function alternativeTiers(purchase: PurchaseDoc): PriceTier[] {
-  const product = findProduct(purchase.productId);
-  if (!product) return [];
-  return product.tiers.filter((t) => t.id !== purchase.tierId);
 }
 
 function assertChangeable(purchase: PurchaseDoc | null): asserts purchase is PurchaseDoc {

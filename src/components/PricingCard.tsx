@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import {
   creditBucketFor,
   formatPrice,
+  GROUP_META,
   type BillingModel,
   type PriceTier,
 } from "@shared/catalog";
@@ -12,14 +13,6 @@ import { CtaButton } from "./ui/Button";
 import { Card } from "./ui/Card";
 import { Badge } from "./ui/Badge";
 import { ProductArt } from "./ProductArt";
-
-const GROUP_LABEL: Record<BillingModel, string> = {
-  one_time: "One-Time",
-  subscription: "Subscription",
-  usage_based: "Usage-Based",
-  seat_based: "Seat-Based",
-  on_demand: "On-Demand",
-};
 
 /** Orb border colour for the ::before hover animation on each card header. */
 const ORB_COLOR: Record<BillingModel, string> = {
@@ -140,7 +133,7 @@ export function PricingCard({
       >
         <ProductArt art={tier.art} className="absolute inset-0 z-0" />
         <div className="relative z-10 flex items-center justify-between px-5 pt-4">
-          <Badge tone="dark">{GROUP_LABEL[group]}</Badge>
+          <Badge tone="dark">{GROUP_META[group].label}</Badge>
           {tier.highlighted && <Badge tone="lime-solid">Popular</Badge>}
         </div>
       </div>

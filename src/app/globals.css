@@ -218,6 +218,19 @@
   animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Staggered entrance for grids and shelves. Six steps is enough for every
+   collection in the app; anything past the sixth child shares the last delay
+   rather than making the tail feel slow. */
+.stagger > * {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 45ms; }
+.stagger > *:nth-child(3) { animation-delay: 90ms; }
+.stagger > *:nth-child(4) { animation-delay: 135ms; }
+.stagger > *:nth-child(5) { animation-delay: 180ms; }
+.stagger > *:nth-child(n + 6) { animation-delay: 225ms; }
+
 @keyframes pop-in {
   from {
     opacity: 0;
@@ -319,4 +332,21 @@
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────────────
+   Everything above is decorative: entrance fades, the pricing orb, the studio
+   unblur. Honour the OS setting by collapsing them rather than disabling the
+   rules individually — the end state of every animation here is the correct
+   one, so cutting the duration is enough. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

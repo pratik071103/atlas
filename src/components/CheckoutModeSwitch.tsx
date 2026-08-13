@@ -1,9 +1,8 @@
 "use client";
 
 import { ExternalLink, PanelTop, SquareCode, Store } from "lucide-react";
+import type { CheckoutMode } from "@/lib/checkout";
 import { Card } from "./ui/Card";
-
-export type CheckoutMode = "redirect" | "overlay" | "inline";
 
 const MODES: { id: CheckoutMode; label: string; icon: typeof ExternalLink; blurb: string }[] = [
   {

@@ -71,14 +71,6 @@ export interface Product {
   tiers: PriceTier[];
 }
 
-export const GROUP_ORDER: BillingModel[] = [
-  "one_time",
-  "subscription",
-  "usage_based",
-  "seat_based",
-  "on_demand",
-];
-
 export const GROUP_META: Record<BillingModel, { label: string; description: string }> = {
   one_time: { label: "One-Time", description: "Pay once, keep it forever" },
   subscription: {

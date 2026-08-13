@@ -259,17 +259,6 @@ export async function setPlanBalanceWithin(
   return toBalance({ ...wallet, plan: next });
 }
 
-export function setPlanBalance(
-  userId: string,
-  target: number,
-  reason: string,
-  idempotencyKey?: string
-): Promise<WalletBalance> {
-  return withTransaction((session) =>
-    setPlanBalanceWithin(session, userId, target, reason, idempotencyKey)
-  );
-}
-
 /**
  * Spends credits, draining the plan bucket before touching top-ups.
  * Throws InsufficientCreditsError rather than partially spending.
@@ -313,12 +302,4 @@ export async function spendCreditsWithin(
   }
 
   return { plan, topup, total: plan + topup, spentFromPlan, spentFromTopup };
-}
-
-export function spendCredits(
-  userId: string,
-  amount: number,
-  reason: string
-): Promise<SpendResult> {
-  return withTransaction((session) => spendCreditsWithin(session, userId, amount, reason));
 }

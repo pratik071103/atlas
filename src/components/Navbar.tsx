@@ -25,7 +25,15 @@ export function Navbar() {
   const router = useRouter();
   const { identity, loading, signOut, openAuthModal } = useSession();
 
-  const links = identity ? [...PUBLIC_LINKS, ...SIGNED_IN_LINKS] : PUBLIC_LINKS;
+  const links = [
+    ...PUBLIC_LINKS,
+    ...(identity ? SIGNED_IN_LINKS : []),
+    // The webhook inspector serves raw payloads, so its route 404s in
+    // production — don't offer a link that leads nowhere.
+    ...(process.env.NODE_ENV === "development"
+      ? [{ href: "/dev/webhooks", label: "Webhooks" }]
+      : []),
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/90 backdrop-blur">

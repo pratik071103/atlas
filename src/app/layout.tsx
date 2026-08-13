@@ -4,6 +4,7 @@ import { AuthModal } from "@/components/AuthModal";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { SessionProvider } from "@/components/SessionProvider";
+import { ToastProvider } from "@/components/Toaster";
 import "./globals.css";
 
 // next/font self-hosts the files and emits a `size-adjust` fallback, so the
@@ -39,10 +40,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="min-h-screen flex flex-col bg-ink-50 font-body text-ink-900 antialiased">
         <SessionProvider>
-          <Navbar />
-          <div className="flex-1 flex flex-col">{children}</div>
-          <Footer />
-          <AuthModal />
+          <ToastProvider>
+            <Navbar />
+            <div className="flex-1 flex flex-col">{children}</div>
+            <Footer />
+            <AuthModal />
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

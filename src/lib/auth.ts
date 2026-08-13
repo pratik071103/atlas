@@ -157,8 +157,3 @@ export async function getIdentity(): Promise<Identity | null> {
       theme === "dark" || theme === "system" ? (theme as CheckoutTheme) : "light",
   };
 }
-
-/** 401 body returned by every route that needs a signed-in (or guest) user. */
-export const UNAUTHENTICATED = {
-  error: "Not signed in. Continue as guest or sign in first.",
-} as const;

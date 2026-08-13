@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Coins, Package, Wallet } from "lucide-react";
@@ -11,6 +11,7 @@ import { PlaygroundButtons } from "@/components/PlaygroundButtons";
 import { PurchaseLibrary } from "@/components/PurchaseLibrary";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useSession } from "@/components/SessionProvider";
+import { useToast } from "@/components/Toaster";
 import { CtaButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { api, type BillingSnapshot, type UsageEvent, type WalletBalance } from "@/lib/api";
@@ -36,8 +37,12 @@ const BANNER_BY_OUTCOME: Record<PaymentOutcome, Banner> = {
   },
 };
 
+/** How often to re-check while something is waiting on a Dodo webhook. */
+const WEBHOOK_POLL_MS = 5000;
+
 export function DashboardClient() {
   const { identity, loading: sessionLoading, openAuthModal } = useSession();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -48,15 +53,53 @@ export function DashboardClient() {
 
   const checkoutId = searchParams.get("checkout");
 
+  // Snapshot of the last state we told the customer about, so the poll below
+  // can tell an actual change from another identical reading.
+  const seenRef = useRef<{ statuses: Record<string, string>; tiers: Record<string, string> }>({
+    statuses: {},
+    tiers: {},
+  });
+
   const load = useCallback(async () => {
     if (!identity) return;
     try {
-      setData(await api.getBilling());
+      const next = await api.getBilling();
+
+      // Webhooks land server-side; the browser only ever sees the result. This
+      // is where a purchase going active or a plan change finally confirming
+      // gets announced, since nothing the customer did here caused it.
+      const seen = seenRef.current;
+      const statuses: Record<string, string> = {};
+      const tiers: Record<string, string> = {};
+
+      for (const p of next.purchases) {
+        statuses[p.id] = p.status;
+        tiers[p.id] = p.tierId;
+
+        const previousStatus = seen.statuses[p.id];
+        if (previousStatus && previousStatus !== p.status && p.status === "active") {
+          toast(
+            "success",
+            `${p.productName} is active`,
+            p.creditsGranted > 0
+              ? `${p.creditsGranted} ${p.creditBucket} credits added.`
+              : undefined
+          );
+        }
+
+        const previousTier = seen.tiers[p.id];
+        if (previousTier && previousTier !== p.tierId) {
+          toast("info", "Plan change confirmed", `You're now on ${p.productName}.`);
+        }
+      }
+
+      seenRef.current = { statuses, tiers };
+      setData(next);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
     }
-  }, [identity]);
+  }, [identity, toast]);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -66,6 +109,20 @@ export function DashboardClient() {
     }
     void load().finally(() => setLoading(false));
   }, [identity, sessionLoading, load]);
+
+  // Poll only while something is genuinely outstanding — an unsettled checkout
+  // or a requested plan change. Once nothing is waiting on Dodo, the dashboard
+  // goes quiet instead of hammering the API forever.
+  const awaitingWebhook =
+    data?.purchases.some(
+      (p) => p.status === "pending" || p.status === "processing" || p.pendingTierId
+    ) ?? false;
+
+  useEffect(() => {
+    if (!awaitingWebhook) return;
+    const interval = setInterval(() => void load(), WEBHOOK_POLL_MS);
+    return () => clearInterval(interval);
+  }, [awaitingWebhook, load]);
 
   // The playground updates the wallet optimistically off its own response, so
   // the credit meters move on the click rather than after a dashboard reload.

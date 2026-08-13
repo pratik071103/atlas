@@ -63,7 +63,7 @@ export default function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-16">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div className="stagger grid grid-cols-2 md:grid-cols-6 gap-3">
           {GALLERY.map(({ product, tier }) => (
             <figure key={tier.id} className="group">
               <ProductArt

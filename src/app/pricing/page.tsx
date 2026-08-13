@@ -116,7 +116,7 @@ export default function PricingPage() {
             Scroll to see every billing model, side by side
           </div>
 
-          <div className="mt-4 -mx-6 px-6 flex gap-5 overflow-x-auto pb-6 snap-x snap-mandatory no-scrollbar">
+          <div className="stagger mt-4 -mx-6 px-6 flex gap-5 overflow-x-auto pb-6 snap-x snap-mandatory no-scrollbar">
             {SHELF.map(({ product, tier }) => (
               <PricingCard
                 key={tier.id}

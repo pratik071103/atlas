@@ -215,15 +215,6 @@ const collections: Collections = {
   webhookEvents: mongoDb.collection<WebhookEventDoc>("webhookEvents"),
 };
 
-/** Every collection whose documents belong to a user, for guest→account moves. */
-export const OWNED_COLLECTIONS = [
-  "purchases",
-  "wallets",
-  "creditLedger",
-  "usageEvents",
-  "licenses",
-] as const satisfies readonly (keyof Collections)[];
-
 // ---------------------------------------------------------------------------
 // Indexes
 //

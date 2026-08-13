@@ -75,7 +75,7 @@ export default function StudioPage() {
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {GALLERY.map((piece) => (
             <figure key={piece.id} className="overflow-hidden rounded-xl2 border border-ink-100 bg-white shadow-soft">
               <div className="relative">
