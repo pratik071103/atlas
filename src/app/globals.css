@@ -158,7 +158,9 @@
 
 /* ─── Pricing card header orb hover effect (adapted from Uiverse by Javierrocadev) ─
    The ::before orb starts small + blurred at top-left, then on card hover
-   it grows, travels to the right and loses its blur.
+   it grows, travels to the right and loses its blur. It now sits *over* the
+   generated ProductArt band (z-index 1, art at z-0, badges at z-10), so the
+   orb reads as a light source travelling across the artwork.
    --orb-color is set per billing-model group in PricingCard.tsx.
 */
 .pricing-card-header {
@@ -186,7 +188,7 @@
     transform   0.8s ease;
   filter: blur(0.5rem);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 /* Trigger on the parent .card hover so the whole card activates it */
@@ -200,11 +202,6 @@
   transition-delay: 1s;
 }
 
-/* Keep card content above the orb */
-.pricing-card-header > * {
-  position: relative;
-  z-index: 1;
-}
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 @keyframes fade-up {
