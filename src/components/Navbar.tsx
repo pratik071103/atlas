@@ -82,7 +82,7 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Button variant="secondary" onClick={openAuthModal}>
+              <Button variant="secondary" onClick={() => openAuthModal()}>
                 Login
               </Button>
               <Button href="/pricing">Start generating</Button>

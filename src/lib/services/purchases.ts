@@ -27,6 +27,8 @@ import { grantCreditsWithin, setPlanBalanceWithin } from "./wallet";
 const STALE_CHECKOUT_MS = 24 * 60 * 60 * 1000;
 
 export interface CreatePurchaseInput {
+  /** Pre-allocated so it can be embedded in the Dodo return_url and metadata. */
+  id?: string;
   userId: string;
   productId: string;
   tierId: string;
@@ -45,9 +47,10 @@ export interface CreatePurchaseInput {
 export async function createPurchase(input: CreatePurchaseInput): Promise<PurchaseDoc> {
   const c = await getCollections();
   const now = new Date();
+  const { id, ...rest } = input;
   const doc: PurchaseDoc = {
-    _id: newId("pur"),
-    ...input,
+    _id: id ?? newId("pur"),
+    ...rest,
     status: "pending",
     dodoSessionId: input.dodoSessionId ?? null,
     dodoPaymentId: null,

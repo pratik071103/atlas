@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { authClient, type SessionIdentity } from "@/lib/auth-client";
+import type { CheckoutIntent } from "@/lib/checkout";
 
 // ---------------------------------------------------------------------------
 // One client-side source of truth for "who is signed in" plus the auth modal.
@@ -19,14 +20,22 @@ interface SessionState {
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
   authModalOpen: boolean;
-  openAuthModal: () => void;
+  /** Pass an intent to have the modal resume that purchase after signing in. */
+  openAuthModal: (intent?: CheckoutIntent) => void;
   closeAuthModal: () => void;
+  pendingIntent: CheckoutIntent | null;
+  clearPendingIntent: () => void;
+  /** True while the inline checkout frame has taken over the pricing page. */
+  inlineCheckoutOpen: boolean;
+  setInlineCheckoutOpen: (open: boolean) => void;
 }
 
 const SessionContext = createContext<SessionState | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingIntent, setPendingIntent] = useState<CheckoutIntent | null>(null);
+  const [inlineCheckoutOpen, setInlineCheckoutOpen] = useState(false);
   const { data: session, isPending, refetch } = authClient.useSession();
 
   const identity: SessionIdentity | null = useMemo(() => {
@@ -53,8 +62,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await refetch();
   }, [refetch]);
 
-  const openAuthModal = useCallback(() => setAuthModalOpen(true), []);
+  const openAuthModal = useCallback((intent?: CheckoutIntent) => {
+    if (intent) setPendingIntent(intent);
+    setAuthModalOpen(true);
+  }, []);
+
   const closeAuthModal = useCallback(() => setAuthModalOpen(false), []);
+  const clearPendingIntent = useCallback(() => setPendingIntent(null), []);
 
   const value = useMemo(
     () => ({
@@ -65,8 +79,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       authModalOpen,
       openAuthModal,
       closeAuthModal,
+      pendingIntent,
+      clearPendingIntent,
+      inlineCheckoutOpen,
+      setInlineCheckoutOpen,
     }),
-    [identity, isPending, refresh, signOut, authModalOpen, openAuthModal, closeAuthModal]
+    [
+      identity,
+      isPending,
+      refresh,
+      signOut,
+      authModalOpen,
+      openAuthModal,
+      closeAuthModal,
+      pendingIntent,
+      clearPendingIntent,
+      inlineCheckoutOpen,
+    ]
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

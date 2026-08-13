@@ -47,6 +47,23 @@ export interface LedgerEntry {
   createdAt: string;
 }
 
+export interface CheckoutSession {
+  purchaseId: string;
+  sessionId: string | null;
+  checkoutUrl: string | null;
+  simulated: boolean;
+}
+
+export interface CheckoutStatus {
+  purchaseId: string;
+  status: string;
+  productName: string;
+  amount: number;
+  credits: number;
+  creditBucket: CreditBucket;
+  simulated: boolean;
+}
+
 export interface BillingSnapshot {
   identity: SessionIdentitySummary;
   wallet: WalletBalance;
@@ -71,4 +88,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   getBilling: () => request<BillingSnapshot>("/billing/me"),
+
+  createCheckoutSession: (payload: {
+    productId: string;
+    tierId: string;
+    billingCycle: "monthly" | "yearly";
+    mode: "redirect" | "overlay" | "inline";
+  }) =>
+    request<CheckoutSession>("/checkout", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getCheckoutStatus: (purchaseId: string) =>
+    request<CheckoutStatus>(`/checkout/${purchaseId}/status`),
 };

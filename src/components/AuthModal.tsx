@@ -1,8 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
+import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { launchCheckout } from "@/lib/checkout";
 import { useSession } from "./SessionProvider";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
@@ -17,7 +20,16 @@ const TAB_LABEL: Record<Tab, string> = {
 };
 
 export function AuthModal() {
-  const { authModalOpen, closeAuthModal, refresh, identity } = useSession();
+  const {
+    authModalOpen,
+    closeAuthModal,
+    refresh,
+    identity,
+    pendingIntent,
+    clearPendingIntent,
+    setInlineCheckoutOpen,
+  } = useSession();
+  const router = useRouter();
 
   const [tab, setTab] = useState<Tab>("guest");
   const [busy, setBusy] = useState(false);
@@ -45,6 +57,31 @@ export function AuthModal() {
 
   if (!authModalOpen) return null;
 
+  /**
+   * Picks the purchase back up where the sign-in gate interrupted it, so the
+   * customer lands on checkout rather than back at the pricing shelf.
+   */
+  async function resumePendingCheckout() {
+    if (!pendingIntent) return;
+    const intent = pendingIntent;
+    clearPendingIntent();
+
+    try {
+      const session = await api.createCheckoutSession({
+        productId: intent.productId,
+        tierId: intent.tierId,
+        billingCycle: intent.billingCycle,
+        mode: intent.mode,
+      });
+      if (intent.mode === "inline") setInlineCheckoutOpen(true);
+      await launchCheckout(session, intent.mode, () => router.push("/dashboard"));
+    } catch {
+      // Checkout failing should not strand a customer who did successfully
+      // sign in — put them on the dashboard, signed in, and let them retry.
+      router.push("/dashboard");
+    }
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -66,6 +103,7 @@ export function AuthModal() {
       await refresh();
       closeAuthModal();
       setPassword("");
+      await resumePendingCheckout();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -92,9 +130,19 @@ export function AuthModal() {
         </button>
 
         <h2 className="text-xl font-semibold text-ink-900">
-          {isGuestUpgrade ? "Keep your guest progress" : "Sign in to Atlas Studio"}
+          {pendingIntent
+            ? `Continue to buy ${pendingIntent.tierLabel}`
+            : isGuestUpgrade
+              ? "Keep your guest progress"
+              : "Sign in to Atlas Studio"}
         </h2>
-        {isGuestUpgrade && (
+        {pendingIntent && (
+          <p className="mt-1 text-sm text-ink-400">
+            {pendingIntent.productName} — ${pendingIntent.amount}
+            {pendingIntent.billingCycle === "yearly" ? " /yr" : ""}
+          </p>
+        )}
+        {isGuestUpgrade && !pendingIntent && (
           <p className="mt-1 text-sm text-ink-600">
             Create an account and every purchase, credit and license you picked up as a guest
             moves across with you.
