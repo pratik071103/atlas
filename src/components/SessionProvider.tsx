@@ -40,8 +40,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const identity: SessionIdentity | null = useMemo(() => {
     if (!session?.user) return null;
-    const user = session.user as typeof session.user & { isAnonymous?: boolean | null };
+    const user = session.user as typeof session.user & {
+      isAnonymous?: boolean | null;
+      checkoutTheme?: string | null;
+    };
     const isAnonymous = Boolean(user.isAnonymous);
+    const theme = user.checkoutTheme;
     return {
       id: user.id,
       kind: isAnonymous ? "guest" : "user",
@@ -50,6 +54,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       name: isAnonymous ? null : user.name || null,
       email: isAnonymous ? null : user.email || null,
       image: user.image ?? null,
+      checkoutTheme: theme === "dark" || theme === "system" ? theme : "light",
     };
   }, [session]);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
-import { anonymousClient } from "better-auth/client/plugins";
+import { anonymousClient, inferAdditionalFields } from "better-auth/client/plugins";
 import { dodopaymentsClient } from "@dodopayments/better-auth/client";
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,16 @@ import { dodopaymentsClient } from "@dodopayments/better-auth/client";
 // ---------------------------------------------------------------------------
 
 export const authClient = createAuthClient({
-  plugins: [anonymousClient(), dodopaymentsClient()],
+  plugins: [
+    anonymousClient(),
+    dodopaymentsClient(),
+    // Declared by shape rather than `inferAdditionalFields<typeof auth>()`,
+    // which would pull the server auth module — and everything it imports,
+    // including the Mongo client — into the browser bundle.
+    inferAdditionalFields({
+      user: { checkoutTheme: { type: "string", required: false } },
+    }),
+  ],
 });
 
 export type AuthSession = typeof authClient.$Infer.Session;
@@ -34,4 +43,6 @@ export interface SessionIdentity {
   name: string | null;
   email: string | null;
   image: string | null;
+  /** Palette Dodo renders checkout in; edited from the profile page. */
+  checkoutTheme: "light" | "dark" | "system";
 }

@@ -113,8 +113,10 @@ export async function POST(request: Request) {
         return_url: `${appUrl()}/dashboard?checkout=${purchaseId}`,
         cancel_url: `${appUrl()}/pricing`,
         metadata: { purchaseId },
+        // Brand colours in both palettes, so the customer's profile preference
+        // (light / dark / follow the device) still looks like Atlas.
         customization: {
-          theme: "light",
+          theme: identity.checkoutTheme,
           theme_config: {
             light: {
               bg_primary: "#FFFFFF",
@@ -122,6 +124,13 @@ export async function POST(request: Request) {
               button_primary: "#A6E500",
               button_primary_hover: "#8CC500",
               button_text_primary: "#0D0D0D",
+            },
+            dark: {
+              bg_primary: "#0C0F0C",
+              text_primary: "#F7F8F7",
+              button_primary: "#C3EE3F",
+              button_primary_hover: "#AEDE1F",
+              button_text_primary: "#0C0F0C",
             },
             radius: "8px",
           },

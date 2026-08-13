@@ -44,6 +44,24 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
+  user: {
+    additionalFields: {
+      /**
+       * Which palette Dodo renders the hosted/overlay/inline checkout in.
+       *
+       * Stored on the user rather than in localStorage because it is read
+       * server-side when the checkout session is built — the customization is
+       * part of the session, not something the browser can restyle after.
+       */
+      checkoutTheme: {
+        type: "string",
+        required: false,
+        defaultValue: "light",
+        input: true,
+      },
+    },
+  },
+
   databaseHooks: {
     user: {
       create: {
@@ -107,12 +125,15 @@ export const auth = betterAuth({
 // the "guests are anonymous users" detail stays in one place.
 // ---------------------------------------------------------------------------
 
+export type CheckoutTheme = "light" | "dark" | "system";
+
 export interface Identity {
   userId: string;
   name: string;
   email: string;
   isAnonymous: boolean;
   dodoCustomerId: string | null;
+  checkoutTheme: CheckoutTheme;
 }
 
 export async function getIdentity(): Promise<Identity | null> {
@@ -122,14 +143,18 @@ export async function getIdentity(): Promise<Identity | null> {
   const user = session.user as typeof session.user & {
     isAnonymous?: boolean | null;
     dodoCustomerId?: string | null;
+    checkoutTheme?: string | null;
   };
 
+  const theme = user.checkoutTheme;
   return {
     userId: user.id,
     name: user.name ?? "",
     email: user.email ?? "",
     isAnonymous: Boolean(user.isAnonymous),
     dodoCustomerId: user.dodoCustomerId ?? null,
+    checkoutTheme:
+      theme === "dark" || theme === "system" ? (theme as CheckoutTheme) : "light",
   };
 }
 
