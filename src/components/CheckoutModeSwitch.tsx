@@ -1,6 +1,8 @@
-import { ExternalLink, PanelTop, SquareCode, Store } from "lucide-react";
+"use client";
 
-export type CheckoutMode = "redirect" | "overlay" | "inline";
+import { ExternalLink, PanelTop, SquareCode, Store } from "lucide-react";
+import type { CheckoutMode } from "@/lib/checkout";
+import { Card } from "./ui/Card";
 
 const MODES: { id: CheckoutMode; label: string; icon: typeof ExternalLink; blurb: string }[] = [
   {
@@ -31,9 +33,9 @@ interface Props {
 export function CheckoutModeSwitch({ value, onChange }: Props) {
   const active = MODES.find((m) => m.id === value)!;
 
-  // Dodo-hosted storefront preview page, configured in .env
-  // (VITE_DODO_STORE_URL). Hidden when not set.
-  const storefrontUrl = (import.meta.env.VITE_DODO_STORE_URL as string) ?? "";
+  // Dodo-hosted storefront preview page. Hidden when NEXT_PUBLIC_DODO_STORE_URL
+  // is not set.
+  const storefrontUrl = process.env.NEXT_PUBLIC_DODO_STORE_URL ?? "";
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
@@ -50,7 +52,7 @@ export function CheckoutModeSwitch({ value, onChange }: Props) {
               <span className="svgContainer">
                 <Store size={18} strokeWidth={2.2} />
               </span>
-              <span className="BG"></span>
+              <span className="BG" />
             </a>
             <span className="storefront-tooltip">storefront preview</span>
           </div>
@@ -60,6 +62,7 @@ export function CheckoutModeSwitch({ value, onChange }: Props) {
           {MODES.map((m) => (
             <button
               key={m.id}
+              type="button"
               onClick={() => onChange(m.id)}
               className={`rounded-full px-3.5 py-2 text-sm font-semibold transition-colors ${
                 value === m.id ? "bg-ink-900 text-white" : "text-ink-600 hover:text-ink-900"
@@ -71,14 +74,14 @@ export function CheckoutModeSwitch({ value, onChange }: Props) {
         </div>
       </div>
 
-      <div className="card flex items-center gap-2.5 px-3.5 py-2 min-w-0 sm:max-w-xs">
+      <Card className="flex items-center gap-2.5 px-3.5 py-2 min-w-0 sm:max-w-xs">
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-lime-100 text-lime-800">
           <active.icon size={14} />
         </span>
         <p className="text-xs text-ink-600 leading-snug truncate sm:whitespace-normal">
           {active.blurb}
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,32 +1,51 @@
+"use client";
+
 import type { CheckoutSession } from "./api";
 import {
+  closeCheckout as closeSdkCheckout,
   openInlineCheckout,
   openOverlayCheckout,
-  closeCheckout as closeSdkCheckout,
-} from "./checkoutSdk";
+  INLINE_CHECKOUT_ELEMENT_ID,
+} from "./checkout-sdk";
 
 export type CheckoutMode = "redirect" | "overlay" | "inline";
 
-// The checkout container id used by inline mode — must exist in the DOM when
-// launchCheckout is called. Pricing.tsx keeps this element mounted at all
-// times so the injected frame survives React re-renders.
-export const INLINE_CHECKOUT_ELEMENT_ID = "dodo-inline-checkout";
+export { INLINE_CHECKOUT_ELEMENT_ID };
+
+/**
+ * What the customer was trying to buy when they hit the sign-in gate.
+ * Stashed on the session context so the auth modal can resume the purchase
+ * instead of dumping them back on the pricing shelf to start over.
+ */
+export interface CheckoutIntent {
+  productId: string;
+  productName: string;
+  tierId: string;
+  tierLabel: string;
+  amount: number;
+  billingCycle: "monthly" | "yearly";
+  mode: CheckoutMode;
+}
 
 // ---------------------------------------------------------------------------
-// Dispatches a created checkout session based on the pricing-page toggle:
-//   redirect → send the browser to the Dodo-hosted page (return_url brings
-//              the customer back to /dashboard?checkout=<purchaseId>)
+// Dispatches a created checkout session according to the pricing-page toggle:
+//   redirect → send the browser to the Dodo-hosted page (return_url brings the
+//              customer back to /dashboard?checkout=<purchaseId>)
 //   overlay  → open the Dodo modal on top of the current page
 //   inline   → embed the checkout frame into the current page
 //
-// In every mode the terminal success/failure state is confirmed by Dodo
-// webhooks on the server; the dashboard polls the purchase status while the
-// "Verifying payment…" overlay is shown.
+// In every mode the terminal success/failure state is confirmed server-side by
+// webhooks; the dashboard polls the purchase while the "Verifying payment…"
+// overlay is up.
 // ---------------------------------------------------------------------------
-export function launchCheckout(session: CheckoutSession, mode: CheckoutMode, fallback: () => void) {
+export async function launchCheckout(
+  session: CheckoutSession,
+  mode: CheckoutMode,
+  onSimulated: () => void
+): Promise<void> {
   if (session.simulated || !session.checkoutUrl) {
-    // No live Dodo session (SIMULATE_PAYMENTS=1): keep the old instant flow.
-    fallback();
+    // No live Dodo session (simulate mode): the purchase is already active.
+    onSimulated();
     return;
   }
 
@@ -35,15 +54,14 @@ export function launchCheckout(session: CheckoutSession, mode: CheckoutMode, fal
       window.location.href = session.checkoutUrl;
       break;
     case "overlay":
-      openOverlayCheckout(session.checkoutUrl);
+      await openOverlayCheckout(session.checkoutUrl);
       break;
     case "inline":
-      openInlineCheckout(session.checkoutUrl, INLINE_CHECKOUT_ELEMENT_ID);
+      await openInlineCheckout(session.checkoutUrl, INLINE_CHECKOUT_ELEMENT_ID);
       break;
   }
 }
 
-/** Closes any open SDK checkout frame (overlay or inline). */
-export function closeCheckout() {
-  closeSdkCheckout();
+export function closeCheckout(): Promise<void> {
+  return closeSdkCheckout();
 }
