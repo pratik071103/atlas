@@ -8,6 +8,7 @@ import {
 } from "@shared/catalog";
 import { newId } from "@/lib/db";
 import { appUrl, getDodoClient, SIMULATE_PAYMENTS } from "@/lib/dodo";
+import { dodoProductIdFor } from "@/lib/dodo-catalog";
 import { fail, readJson, withIdentity } from "@/lib/http";
 import { issueSimulatedLicense } from "@/lib/services/licenses";
 import { activatePurchase, createPurchase } from "@/lib/services/purchases";
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
       amount,
       creditsGranted: tier.credits ?? 0,
       creditBucket: creditBucketFor(product.group),
-      dodoProductId: tier.dodoProductId,
+      dodoProductId: dodoProductIdFor(tier.id),
     };
 
     // ---- Simulated mode ----------------------------------------------------
@@ -96,10 +97,20 @@ export async function POST(request: Request) {
     // later from the usage events the playground ingests.
     const metered = isMetered(product.group);
 
+    const dodoProductId = dodoProductIdFor(tier.id);
+    if (!dodoProductId) {
+      return fail(
+        `No Dodo product id configured for tier "${tier.id}" — set DODO_PRODUCT_${tier.id
+          .toUpperCase()
+          .replace(/-/g, "_")} in .env.`,
+        500
+      );
+    }
+
     let session;
     try {
       session = await getDodoClient().checkoutSessions.create({
-        product_cart: [{ product_id: tier.dodoProductId, quantity: metered ? 0 : 1 }],
+        product_cart: [{ product_id: dodoProductId, quantity: metered ? 0 : 1 }],
         // Prefer the Dodo customer Better Auth linked at sign-up so repeat
         // purchases attach to one customer record and show up in that
         // customer's portal. Anonymous guests have none yet — let Dodo collect

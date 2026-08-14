@@ -3,6 +3,7 @@ import "server-only";
 import { creditBucketFor, findProduct, type Product } from "@shared/catalog";
 import { getCollections, type PurchaseDoc } from "@/lib/db";
 import { getDodoClient, SIMULATE_PAYMENTS } from "@/lib/dodo";
+import { dodoProductIdFor } from "@/lib/dodo-catalog";
 import {
   refreshPlanAllowance,
   repointPurchaseTier,
@@ -85,15 +86,23 @@ export async function changePlan(
       amount: purchase.billingCycle === "yearly" ? target.yearly : target.monthly,
       creditsGranted: target.credits ?? 0,
       creditBucket: creditBucketFor(product.group),
-      dodoProductId: target.dodoProductId,
+      dodoProductId: dodoProductIdFor(target.id),
     });
     await refreshPlanAllowance(purchase.userId, `Plan changed: ${productName}`);
     return { applied: true, pendingTierId: target.id, productName };
   }
 
+  const dodoProductId = dodoProductIdFor(target.id);
+  if (!dodoProductId) {
+    throw new SubscriptionError(
+      `No Dodo product id configured for tier "${target.id}" — set the DODO_PRODUCT_* env var.`,
+      500
+    );
+  }
+
   try {
     await getDodoClient().subscriptions.changePlan(purchase.dodoSubscriptionId, {
-      product_id: target.dodoProductId,
+      product_id: dodoProductId,
       proration_billing_mode: "prorated_immediately",
       quantity: 1,
     });

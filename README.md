@@ -56,8 +56,10 @@ indexes are created on first use.
 ## Going live (Dodo test mode)
 
 1. **Create the products** in the Dodo dashboard (test mode) — one per catalog tier — and
-   paste their ids into `dodoProductId` in [`shared/catalog.ts`](shared/catalog.ts). The
-   Studio Pass needs a **license key** entitlement attached so Dodo issues a key on payment.
+   paste their ids into the `DODO_PRODUCT_*` variables in `.env` (see
+   [`.env.example`](.env.example) for the full list, one per tier in
+   [`shared/catalog.ts`](shared/catalog.ts)). The Studio Pass needs a **license key**
+   entitlement attached so Dodo issues a key on payment.
 2. **Set the credentials** in `.env`:
    ```
    DODO_API_KEY=...
