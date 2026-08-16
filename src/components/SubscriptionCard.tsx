@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Clock, XCircle } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Clock, Info, XCircle } from "lucide-react";
 import { findProduct, formatPrice, tierPrice, type PriceTier } from "@shared/catalog";
 import { api, type Purchase } from "@/lib/api";
 import { Badge } from "./ui/Badge";
@@ -22,6 +23,12 @@ import { CancelSubscriptionModal } from "./CancelSubscriptionModal";
 interface Props {
   subscription: Purchase | null;
   onChanged: () => void;
+}
+
+function getSavedSettings() {
+  if (typeof window === "undefined") return null;
+  const saved = localStorage.getItem("planChangeSettings");
+  return saved ? JSON.parse(saved) : null;
 }
 
 export function SubscriptionCard({ subscription, onChanged }: Props) {
@@ -64,7 +71,8 @@ export function SubscriptionCard({ subscription, onChanged }: Props) {
     setError(null);
     setMessage(null);
     try {
-      const result = await api.changePlan(subscription.id, tier.id);
+      const settings = getSavedSettings();
+      const result = await api.changePlan(subscription.id, tier.id, settings || undefined);
       setMessage(
         result.applied
           ? `You're now on ${result.productName}.`
@@ -115,6 +123,27 @@ export function SubscriptionCard({ subscription, onChanged }: Props) {
         </Badge>
       </div>
 
+      {(() => {
+        const settings = getSavedSettings();
+        const prorationMode = settings?.proration_billing_mode ?? "prorated_immediately";
+        const modeLabels: Record<string, string> = {
+          prorated_immediately: "Prorated immediately",
+          full_immediately: "Full immediately",
+          difference_immediately: "Difference immediately",
+          do_not_bill: "Do not bill",
+        };
+        return (
+          <div className="mt-3 text-xs text-ink-500 flex items-center gap-1.5 flex-wrap">
+            <Info size={11} />
+            <span>Proration:</span>
+            <span className="font-mono bg-ink-50 px-1.5 rounded">{modeLabels[prorationMode] ?? prorationMode}</span>
+            <Link href="/profile" className="underline hover:text-ink-900 ml-auto">
+              Configure in Profile →
+            </Link>
+          </div>
+        );
+      })()}
+
       {pendingTier && (
         <div className="mt-4 flex items-start gap-2 rounded-lg border border-lavender-200 bg-lavender-50 px-3 py-2 text-xs text-lavender-600">
           <Clock size={13} className="mt-0.5 shrink-0" />
@@ -152,10 +181,21 @@ export function SubscriptionCard({ subscription, onChanged }: Props) {
               );
             })}
           </div>
-          <p className="mt-2 text-xs text-ink-400">
-            Changes bill <strong>prorated immediately</strong> — the difference for the rest of
-            this period is settled straight away.
-          </p>
+          {(() => {
+            const settings = getSavedSettings();
+            const prorationMode = settings?.proration_billing_mode ?? "prorated_immediately";
+            const modeLabels: Record<string, string> = {
+              prorated_immediately: "prorated immediately — the difference for the rest of this period is settled straight away",
+              full_immediately: "full immediately — charged full new price, unused portion credited",
+              difference_immediately: "difference immediately — price difference for remainder charged now",
+              do_not_bill: "no proration — change takes effect with no immediate charge",
+            };
+            return (
+              <p className="mt-2 text-xs text-ink-400">
+                Changes bill <strong>{modeLabels[prorationMode] ?? modeLabels.prorated_immediately}</strong>
+              </p>
+            );
+          })()}
         </div>
       )}
 

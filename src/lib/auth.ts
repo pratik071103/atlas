@@ -42,6 +42,7 @@ export const auth = betterAuth({
     // Demo app: no mail transport is configured, so verification would lock
     // every new account out. Turn this on once you wire an email provider.
     requireEmailVerification: false,
+    minPasswordLength: 3,
   },
 
   user: {

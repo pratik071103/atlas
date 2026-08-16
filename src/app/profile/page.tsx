@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, KeyRound, LogOut, Sparkles, UserPlus } from "lucide-react";
+import { ExternalLink, Info, KeyRound, LogOut, Sparkles, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { CreditMeter } from "@/components/CreditMeter";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
@@ -36,6 +36,41 @@ export default function ProfilePage() {
   const [savingName, setSavingName] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Plan change settings (persisted in localStorage)
+const [planChangeSettings, setPlanChangeSettings] = useState<{
+    proration_billing_mode: "prorated_immediately" | "full_immediately" | "difference_immediately" | "do_not_bill";
+    effective_at: "immediately" | "next_billing_date";
+    on_payment_failure: "prevent_change" | "apply_change";
+    discount_codes: string;
+  }>({
+    proration_billing_mode: "prorated_immediately",
+    effective_at: "immediately",
+    on_payment_failure: "prevent_change",
+    discount_codes: "",
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Dodo constraint: next_billing_date only works with full_immediately proration
+  const canSchedule = planChangeSettings.proration_billing_mode === "full_immediately";
+  const effectiveProrationMode = planChangeSettings.effective_at === "next_billing_date"
+    ? "full_immediately"
+    : planChangeSettings.proration_billing_mode;
+  const isProrationLocked = planChangeSettings.effective_at === "next_billing_date";
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("planChangeSettings");
+      if (saved) {
+        try {
+          setPlanChangeSettings(JSON.parse(saved));
+        } catch {
+          // ignore corrupted data
+        }
+      }
+    }
+  }, []);
 
   const load = useCallback(async () => {
     if (!identity) {
@@ -96,12 +131,32 @@ export default function ProfilePage() {
     }
   }
 
-  /** Real Dodo-hosted portal, via the adapter. Guests have no customer yet. */
+  function savePlanChangeSettings() {
+    setSavingSettings(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const toSave = {
+        proration_billing_mode: planChangeSettings.proration_billing_mode,
+        effective_at: planChangeSettings.effective_at,
+        on_payment_failure: planChangeSettings.on_payment_failure,
+        discount_codes: planChangeSettings.discount_codes,
+      };
+      localStorage.setItem("planChangeSettings", JSON.stringify(toSave));
+      setNotice("Plan change defaults saved.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  /** Real Dodo-hosted portal, via the adapter. Requires a completed purchase. */
   async function openPortal() {
     setError(null);
     setNotice(null);
-    if (identity?.kind === "guest") {
-      setError("Create an account to manage billing — guests have no customer record yet.");
+    if (!hasCompletedPurchase) {
+      setError("Complete a purchase to access the customer portal.");
       return;
     }
     try {
@@ -147,6 +202,11 @@ export default function ProfilePage() {
         (p.billingModel === "subscription" || p.billingModel === "seat_based") &&
         (p.status === "active" || p.status === "scheduled_cancel")
     ) ?? null;
+
+  // Only show portal if user has completed at least one purchase
+  const hasCompletedPurchase = billing?.purchases.some(
+    (p) => ["active", "scheduled_cancel", "cancelled"].includes(p.status)
+  ) ?? false;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16">
@@ -230,10 +290,100 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          <div className="mt-5 border-t border-ink-100 pt-4">
+            <p className="text-xs font-semibold text-ink-600">Plan change behavior</p>
+            <p className="mt-0.5 text-xs text-ink-400">
+              Defaults applied when upgrading or downgrading your subscription.
+            </p>
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1">Proration mode</label>
+                <select
+                  value={effectiveProrationMode}
+                  onChange={isProrationLocked ? undefined : (e) => setPlanChangeSettings({ ...planChangeSettings, proration_billing_mode: e.target.value as any })}
+                  disabled={isProrationLocked}
+                  className={`w-full sm:w-64 px-3 py-2 text-sm border border-ink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 ${
+                    isProrationLocked ? "bg-ink-50 text-ink-400 cursor-not-allowed" : "bg-white"
+                  }`}
+                >
+                  <option value="prorated_immediately">Prorated immediately (charge/credit difference for remainder of period)</option>
+                  <option value="full_immediately">Full immediately (charge full new price, credit unused portion)</option>
+                  <option value="difference_immediately">Difference immediately (charge price difference for remainder)</option>
+                  <option value="do_not_bill">Do not bill (change takes effect, no proration charge)</option>
+                </select>
+                {isProrationLocked && (
+                  <p className="mt-1 text-[11px] text-lime-700">
+                    ℹ Locked to "Full immediately" — required for scheduled changes (Dodo constraint).
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1">When to apply</label>
+                <select
+                  value={planChangeSettings.effective_at}
+                  onChange={(e) => {
+                    const next = e.target.value as "immediately" | "next_billing_date";
+                    // If user tries to select next_billing_date without full_immediately, force proration mode
+                    if (next === "next_billing_date" && !canSchedule) {
+                      setPlanChangeSettings({
+                        ...planChangeSettings,
+                        proration_billing_mode: "full_immediately",
+                        effective_at: next,
+                      });
+                    } else {
+                      setPlanChangeSettings({ ...planChangeSettings, effective_at: next });
+                    }
+                  }}
+                  className="w-full sm:w-64 px-3 py-2 text-sm border border-ink-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                >
+                  <option value="immediately">Immediately</option>
+                  <option
+                    value="next_billing_date"
+                    disabled={!canSchedule}
+                  >
+                    Next billing date{!canSchedule ? " (requires Full immediately proration)" : ""}
+                  </option>
+                </select>
+                {!canSchedule && planChangeSettings.effective_at === "next_billing_date" && (
+                  <p className="mt-1 text-[11px] text-lime-700">
+                    ℹ Switched proration to "Full immediately" — required for scheduled changes.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1">On payment failure</label>
+                <select
+                  value={planChangeSettings.on_payment_failure}
+                  onChange={(e) => setPlanChangeSettings({ ...planChangeSettings, on_payment_failure: e.target.value as any })}
+                  className="w-full sm:w-64 px-3 py-2 text-sm border border-ink-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                >
+                  <option value="prevent_change">Prevent change (keep current plan until payment succeeds)</option>
+                  <option value="apply_change">Apply change anyway (grant new plan immediately)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1">Discount codes (comma-separated)</label>
+                <input
+                  type="text"
+                  value={planChangeSettings.discount_codes}
+                  onChange={(e) => setPlanChangeSettings({ ...planChangeSettings, discount_codes: e.target.value })}
+                  placeholder="CODE1, CODE2"
+                  className="w-full sm:w-64 px-3 py-2 text-sm border border-ink-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-lime-500"
+                />
+                <p className="mt-1 text-[11px] text-ink-400">Max 20 codes, applied in order. Empty = remove all discounts.</p>
+              </div>
+              <Button variant="secondary" onClick={savePlanChangeSettings} loading={savingSettings}>
+                Save defaults
+              </Button>
+            </div>
+          </div>
+
           <div className="mt-5 flex flex-wrap gap-2 border-t border-ink-100 pt-4">
-            <Button variant="secondary" onClick={openPortal}>
-              <ExternalLink size={15} /> Customer portal
-            </Button>
+            {hasCompletedPurchase && (
+              <Button variant="secondary" onClick={openPortal}>
+                <ExternalLink size={15} /> Customer portal
+              </Button>
+            )}
             <Button
               variant="danger"
               onClick={async () => {
