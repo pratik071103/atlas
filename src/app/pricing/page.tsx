@@ -87,14 +87,25 @@ export default function PricingPage() {
             </Card>
           )}
 
-          <div className="mb-6 flex justify-end">
-            <CheckoutModeSwitch
-              value={mode}
-              onChange={(m) => {
-                if (inlineCheckoutOpen) void closeInlineCheckout();
-                setMode(m);
-              }}
-            />
+          <div className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
+            <div className="max-w-2xl">
+              <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
+                Simple, transparent pricing
+              </h1>
+              <p className="mt-4 text-lg text-ink-600">
+                Flexible plans built for creators of all sizes. Choose the perfect tier for your creative journey.
+              </p>
+            </div>
+
+            <div className="shrink-0">
+              <CheckoutModeSwitch
+                value={mode}
+                onChange={(m) => {
+                  if (inlineCheckoutOpen) void closeInlineCheckout();
+                  setMode(m);
+                }}
+              />
+            </div>
           </div>
 
           <Pricing41

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import {
   formatPrice,
@@ -222,6 +222,9 @@ interface Pricing41Props {
   onBuy: (product: Product, tier: PriceTier) => void;
 }
 
+import useEmblaCarousel from "embla-carousel-react";
+import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures";
+
 export function Pricing41({
   shelf,
   loadingTier,
@@ -229,19 +232,85 @@ export function Pricing41({
   onCycleChange,
   onBuy,
 }: Pricing41Props) {
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { align: "start", loop: false },
+    [WheelGesturesPlugin()]
+  );
+  const [active, setActive] = useState(0);
+
+  const total = shelf.length;
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => {
+      setActive(emblaApi.selectedScrollSnap());
+    };
+    emblaApi.on("select", onSelect);
+    onSelect();
+  }, [emblaApi]);
+
+  const prev = () => emblaApi && emblaApi.scrollPrev();
+  const next = () => emblaApi && emblaApi.scrollNext();
+  const scrollTo = (index: number) => emblaApi && emblaApi.scrollTo(index);
+
   return (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {shelf.map(({ product, tier }) => (
-        <PricingCard41
-          key={tier.id}
-          product={product}
-          tier={tier}
-          loading={loadingTier === tier.id}
-          cycle={globalCycle}
-          onBuy={() => onBuy(product, tier)}
-          onCycleChange={(c) => onCycleChange(tier.id, c)}
-        />
-      ))}
+    <div className="relative">
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex -ml-4">
+          {shelf.map(({ product, tier }) => (
+            <div key={tier.id} className="min-w-0 shrink-0 grow-0 pl-4 w-[320px]">
+              <PricingCard41
+                product={product}
+                tier={tier}
+                loading={loadingTier === tier.id}
+                cycle={globalCycle}
+                onBuy={() => onBuy(product, tier)}
+                onCycleChange={(c) => onCycleChange(tier.id, c)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="mt-5 flex items-center justify-center gap-4">
+        <button
+          onClick={prev}
+          disabled={active === 0}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 transition hover:bg-ink-50 disabled:opacity-30"
+          aria-label="Previous"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        <div className="flex items-center gap-1.5">
+          {shelf.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => scrollTo(i)}
+              className={`rounded-full transition-all ${
+                i === active
+                  ? "h-2 w-5 bg-ink-900"
+                  : "h-2 w-2 bg-ink-200 hover:bg-ink-400"
+              }`}
+              aria-label={`Go to card ${i + 1}`}
+            />
+          ))}
+        </div>
+
+        <button
+          onClick={next}
+          disabled={active === total - 1}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 transition hover:bg-ink-50 disabled:opacity-30"
+          aria-label="Next"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
