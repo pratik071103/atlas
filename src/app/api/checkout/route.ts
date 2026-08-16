@@ -99,7 +99,9 @@ export async function POST(request: Request) {
     let session;
     try {
       session = await getDodoClient().checkoutSessions.create({
-        product_cart: [{ product_id: tier.dodoProductId, quantity: metered ? 0 : 1 }],
+        // Dodo requires a positive cart quantity even for mandate-only
+        // on-demand checkouts. `mandate_only` prevents an upfront charge.
+        product_cart: [{ product_id: tier.dodoProductId, quantity: 1 }],
         // Prefer the Dodo customer Better Auth linked at sign-up so repeat
         // purchases attach to one customer record and show up in that
         // customer's portal. Anonymous guests have none yet — let Dodo collect
@@ -140,7 +142,6 @@ export async function POST(request: Request) {
               subscription_data: {
                 on_demand: {
                   mandate_only: true,
-                  product_price: toMinorUnits(amount),
                   adaptive_currency_fees_inclusive: true,
                   product_description: productName,
                 },

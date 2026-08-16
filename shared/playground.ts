@@ -45,7 +45,7 @@ export const PLAYGROUND_ACTIONS: PlaygroundAction[] = [
     label: "API call",
     description: "Metered only — reported to Dodo, no credits spent.",
     credits: 0,
-    eventName: "api_call",
+    eventName: "api.call",
     icon: "activity",
   },
 ];

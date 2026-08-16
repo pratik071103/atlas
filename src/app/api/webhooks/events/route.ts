@@ -15,8 +15,6 @@ import { fail } from "@/lib/http";
 // ---------------------------------------------------------------------------
 
 const EVENT_LIMIT = 50;
-const PAYLOAD_PREVIEW_CHARS = 600;
-
 export async function GET() {
   if (process.env.NODE_ENV === "production") return fail("Not found.", 404);
 
@@ -34,7 +32,7 @@ export async function GET() {
       status: r.status,
       eventId: r.eventId,
       createdAt: r.createdAt.toISOString(),
-      payloadPreview: JSON.stringify(r.payload, null, 2).slice(0, PAYLOAD_PREVIEW_CHARS),
+      payload: JSON.stringify(r.payload, null, 2),
     })),
   });
 }
