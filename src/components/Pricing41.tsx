@@ -303,7 +303,7 @@ function PricingCard41({
         )}
       </AnimatePresence>
 
-      <AnimatePresence initial={false}>
+      <AnimatePresence initial={false} mode="popLayout">
         {snippetOpen && !inlineOpen && (
           <motion.div
             layout
@@ -311,7 +311,7 @@ function PricingCard41({
             onClick={(event) => event.stopPropagation()}
             initial={reduceMotion ? false : { opacity: 0, x: 24, filter: "blur(4px)" }}
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0, filter: "blur(0px)" }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 16, filter: "blur(4px)" }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 24, filter: "blur(4px)" }}
             transition={transition}
             className="min-w-0 border-t border-ink-100 pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0"
           >
