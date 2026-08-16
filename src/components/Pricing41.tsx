@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import {
   formatPrice,
   GROUP_META,
@@ -99,14 +100,27 @@ function BillingSwitch({
 // Single card
 // ---------------------------------------------------------------------------
 
+const INLINE_CHECKOUT_SNIPPET = `DodoPayments.Initialize({
+  mode: "test",
+  displayType: "inline",
+  onEvent: (event) => console.log(event),
+});
+
+DodoPayments.Checkout.open({
+  checkoutUrl,
+  elementId: "dodo-inline-checkout",
+});`;
+
 interface CardProps {
   product: Product;
   tier: PriceTier;
   loading: boolean;
   cycle: "monthly" | "yearly";
   inlineOpen: boolean;
+  snippetOpen: boolean;
   inlineElementId: string;
   onBuy: () => void;
+  onToggleSnippet: () => void;
   onCloseInlineCheckout: () => void;
   // Receives the cycle state from the parent so inline checkout mode still
   // can read the selected cycle; each card owns its own local toggle too.
@@ -119,12 +133,18 @@ function PricingCard41({
   loading,
   cycle,
   inlineOpen,
+  snippetOpen,
   inlineElementId,
   onBuy,
+  onToggleSnippet,
   onCloseInlineCheckout,
   onCycleChange,
 }: CardProps) {
+  const reduceMotion = useReducedMotion();
   const cycleSensitive = isCycleSensitive(product.group);
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 420, damping: 36, mass: 0.8 };
 
   function handleCycle(v: "monthly" | "yearly") {
     onCycleChange(v);
@@ -140,110 +160,185 @@ function PricingCard41({
     cycleSensitive && cycle === "yearly" && tier.yearly < tier.monthly * 12;
 
   const savings = cycleSensitive ? savingsLabel(tier) : null;
+  const expanded = inlineOpen || snippetOpen;
+  const sideExpanded = expanded;
 
   return (
-    <div
-      className={`flex flex-col rounded-2xl border bg-white p-6 transition-shadow hover:shadow-md ${
+    <motion.article
+      layout
+      transition={transition}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-label={`${product.name} ${tier.label}${expanded ? ", expanded" : ""}`}
+      aria-selected={expanded}
+      onClick={() => {
+        if (!inlineOpen) onToggleSnippet();
+      }}
+      onKeyDown={(event) => {
+        if (inlineOpen) return;
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        onToggleSnippet();
+      }}
+      className={`cursor-pointer rounded-2xl border bg-white p-6 outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2 ${
+        sideExpanded ? "grid gap-6 md:grid-cols-[272px_minmax(0,1fr)]" : "flex flex-col"
+      } ${
         tier.highlighted
           ? "border-ink-900 shadow-sm ring-1 ring-ink-900"
           : "border-ink-100"
       }`}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <span className="inline-block rounded-full border border-ink-100 px-2.5 py-0.5 text-[11px] font-medium text-ink-600">
-            {GROUP_META[product.group].label}
-          </span>
-          <h3 className="mt-3 text-base font-bold text-ink-900">{product.name}</h3>
-          <p className="mt-0.5 text-xs text-ink-500">{tier.label}</p>
-        </div>
-        {tier.highlighted && (
-          <span className="shrink-0 rounded-full bg-lime-400 px-2.5 py-0.5 text-[11px] font-semibold text-ink-900">
-            Popular
-          </span>
-        )}
-      </div>
-
-      {/* Billing toggle — only shown for cycle-sensitive products */}
-      {cycleSensitive && (
-        <div className="mt-4">
-          <BillingSwitch value={cycle} onChange={handleCycle} savings={savings} />
-        </div>
-      )}
-
-      {/* Price */}
-      <div className="mt-5 flex items-baseline gap-2">
-        {showStrikethrough && (
-          <span className="text-sm text-ink-400 line-through">{formatPrice(tier.monthly)}</span>
-        )}
-        <span className="text-4xl font-bold tracking-tight text-ink-900">
-          {formatPrice(displayAmount)}
-        </span>
-        <span className="text-xs text-ink-400">{unitSuffix(product.group, cycle)}</span>
-      </div>
-
-      {/* Description */}
-      <p className="mt-3 text-sm text-ink-500">{tier.description}</p>
-
-      {/* CTA */}
-      <button
-        onClick={onBuy}
-        disabled={loading || inlineOpen}
-        className={`mt-5 flex w-full items-center justify-center rounded-xl py-2.5 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2 disabled:opacity-60 ${
-          tier.highlighted
-            ? "bg-ink-900 text-white hover:bg-ink-800"
-            : "border border-ink-200 bg-white text-ink-900 hover:bg-ink-50"
-        }`}
-      >
-        {loading ? (
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-        ) : (
-          inlineOpen ? "Checkout open" : product.ctaLabel
-        )}
-      </button>
-
-      {inlineOpen && (
-        <div className="mt-5 border-t border-ink-100 pt-5">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-ink-900">Complete checkout</p>
-              <p className="text-xs text-ink-500">Secure payment by Dodo Payments</p>
-            </div>
-            <button
-              type="button"
-              onClick={onCloseInlineCheckout}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-ink-200 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
-              aria-label="Cancel checkout"
-            >
-              <X size={15} />
-            </button>
+      <motion.div layout className="flex min-w-0 flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <span className="inline-block rounded-full border border-ink-100 px-2.5 py-0.5 text-[11px] font-medium text-ink-600">
+              {GROUP_META[product.group].label}
+            </span>
+            <h3 className="mt-3 text-base font-bold text-ink-900">{product.name}</h3>
+            <p className="mt-0.5 text-xs text-ink-500">{tier.label}</p>
           </div>
-          <div
-            id={inlineElementId}
-            className="min-h-[620px] overflow-hidden rounded-xl border border-ink-100 bg-white"
-            aria-label="Inline checkout"
-          />
+          {tier.highlighted && (
+            <span className="shrink-0 rounded-full bg-lime-400 px-2.5 py-0.5 text-[11px] font-semibold text-ink-900">
+              Popular
+            </span>
+          )}
         </div>
-      )}
 
-      {/* Divider */}
-      <div className="my-5 border-t border-ink-100" />
+        {/* Billing toggle - only shown for cycle-sensitive products */}
+        {cycleSensitive && (
+          <div className="mt-4" onClick={(event) => event.stopPropagation()}>
+            <BillingSwitch value={cycle} onChange={handleCycle} savings={savings} />
+          </div>
+        )}
 
-      {/* Features */}
-      <ul className="space-y-2.5">
-        {tier.features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-ink-700">
-            <Check
-              size={14}
-              className="mt-0.5 shrink-0 text-lime-600"
-              strokeWidth={2.5}
+        {/* Price */}
+        <div className="mt-5 flex items-baseline gap-2">
+          {showStrikethrough && (
+            <span className="text-sm text-ink-400 line-through">{formatPrice(tier.monthly)}</span>
+          )}
+          <span className="text-4xl font-bold tracking-tight text-ink-900">
+            {formatPrice(displayAmount)}
+          </span>
+          <span className="text-xs text-ink-400">{unitSuffix(product.group, cycle)}</span>
+        </div>
+
+        {/* Description */}
+        <p className="mt-3 text-sm text-ink-500">{tier.description}</p>
+
+        {/* CTA */}
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            onBuy();
+          }}
+          disabled={loading || inlineOpen}
+          className={`mt-5 flex w-full items-center justify-center rounded-xl py-2.5 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2 disabled:opacity-60 ${
+            tier.highlighted
+              ? "bg-ink-900 text-white hover:bg-ink-800"
+              : "border border-ink-200 bg-white text-ink-900 hover:bg-ink-50"
+          }`}
+        >
+          {loading ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            inlineOpen ? "Checkout open" : product.ctaLabel
+          )}
+        </button>
+
+        {/* Divider */}
+        <div className="my-5 border-t border-ink-100" />
+
+        {/* Features */}
+        <ul className="space-y-2.5">
+          {tier.features.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-sm text-ink-700">
+              <Check
+                size={14}
+                className="mt-0.5 shrink-0 text-lime-600"
+                strokeWidth={2.5}
+              />
+              {f}
+            </li>
+          ))}
+        </ul>
+      </motion.div>
+
+      <AnimatePresence initial={false}>
+        {inlineOpen && (
+          <motion.div
+            layout
+            key="inline-checkout"
+            initial={reduceMotion ? false : { opacity: 0, y: 12, filter: "blur(4px)" }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, filter: "blur(4px)" }}
+            transition={transition}
+            className="min-w-0 border-t border-ink-100 pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-ink-900">Complete checkout</p>
+                <p className="text-xs text-ink-500">Secure payment by Dodo Payments</p>
+              </div>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCloseInlineCheckout();
+                }}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-ink-200 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
+                aria-label="Cancel checkout"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div
+              id={inlineElementId}
+              className="min-h-[620px] overflow-hidden rounded-xl border border-ink-100 bg-white"
+              aria-label="Inline checkout"
             />
-            {f}
-          </li>
-        ))}
-      </ul>
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence initial={false}>
+        {snippetOpen && !inlineOpen && (
+          <motion.div
+            layout
+            key="code-snippet"
+            onClick={(event) => event.stopPropagation()}
+            initial={reduceMotion ? false : { opacity: 0, x: 24, filter: "blur(4px)" }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0, filter: "blur(0px)" }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 16, filter: "blur(4px)" }}
+            transition={transition}
+            className="min-w-0 border-t border-ink-100 pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-ink-900">Inline checkout code</p>
+                <p className="text-xs text-ink-500">The Dodo SDK call used when this card checks out inline.</p>
+              </div>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleSnippet();
+                }}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-ink-200 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
+                aria-label="Collapse card"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-ink-900 p-4 font-mono text-xs leading-relaxed text-white">
+              <code>{INLINE_CHECKOUT_SNIPPET}</code>
+            </pre>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.article>
   );
 }
 
@@ -279,7 +374,12 @@ export function Pricing41({
     { align: "start", loop: false },
     [WheelGesturesPlugin()]
   );
+  const reduceMotion = useReducedMotion();
   const [active, setActive] = useState(0);
+  const [snippetTierId, setSnippetTierId] = useState<string | null>(null);
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 420, damping: 36, mass: 0.8 };
 
   const total = shelf.length;
 
@@ -293,11 +393,12 @@ export function Pricing41({
   }, [emblaApi]);
 
   useEffect(() => {
-    if (!emblaApi || !inlineTierId) return;
-    const index = shelf.findIndex(({ tier }) => tier.id === inlineTierId);
+    if (!emblaApi || (!inlineTierId && !snippetTierId)) return;
+    const targetTierId = inlineTierId ?? snippetTierId;
+    const index = shelf.findIndex(({ tier }) => tier.id === targetTierId);
     emblaApi.reInit();
     if (index >= 0) emblaApi.scrollTo(index);
-  }, [emblaApi, inlineTierId, shelf]);
+  }, [emblaApi, inlineTierId, shelf, snippetTierId]);
 
   const prev = () => emblaApi && emblaApi.scrollPrev();
   const next = () => emblaApi && emblaApi.scrollNext();
@@ -305,34 +406,47 @@ export function Pricing41({
 
   return (
     <div className="relative">
-      <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex -ml-4">
-          {shelf.map(({ product, tier }) => {
-            const inlineOpen = inlineTierId === tier.id;
+      <LayoutGroup>
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex -ml-4">
+            {shelf.map(({ product, tier }) => {
+              const inlineOpen = inlineTierId === tier.id;
+              const snippetOpen = snippetTierId === tier.id;
+              const expanded = inlineOpen || snippetOpen;
 
-            return (
-              <div
-                key={tier.id}
-                className={`min-w-0 shrink-0 grow-0 pl-4 transition-[width] duration-300 ${
-                  inlineOpen ? "w-[min(92vw,720px)]" : "w-[320px]"
-                }`}
-              >
-                <PricingCard41
-                  product={product}
-                  tier={tier}
-                  loading={loadingTier === tier.id}
-                  cycle={globalCycle}
-                  inlineOpen={inlineOpen}
-                  inlineElementId={inlineElementId}
-                  onBuy={() => onBuy(product, tier)}
-                  onCloseInlineCheckout={onCloseInlineCheckout}
-                  onCycleChange={(c) => onCycleChange(tier.id, c)}
-                />
-              </div>
-            );
-          })}
+              return (
+                <motion.div
+                  layout
+                  transition={transition}
+                  key={tier.id}
+                  className={`min-w-0 shrink-0 grow-0 pl-4 ${
+                    expanded ? "w-[min(92vw,960px)]" : "w-[320px]"
+                  }`}
+                >
+                  <PricingCard41
+                    product={product}
+                    tier={tier}
+                    loading={loadingTier === tier.id}
+                    cycle={globalCycle}
+                    inlineOpen={inlineOpen}
+                    snippetOpen={snippetOpen}
+                    inlineElementId={inlineElementId}
+                    onBuy={() => {
+                      setSnippetTierId(null);
+                      onBuy(product, tier);
+                    }}
+                    onToggleSnippet={() =>
+                      setSnippetTierId((current) => (current === tier.id ? null : tier.id))
+                    }
+                    onCloseInlineCheckout={onCloseInlineCheckout}
+                    onCycleChange={(c) => onCycleChange(tier.id, c)}
+                  />
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </LayoutGroup>
 
       {/* Controls */}
       <div className="mt-5 flex items-center justify-center gap-4">
