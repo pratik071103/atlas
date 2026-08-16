@@ -41,7 +41,8 @@ export interface CheckoutIntent {
 export async function launchCheckout(
   session: CheckoutSession,
   mode: CheckoutMode,
-  onSimulated: () => void
+  onSimulated: () => void,
+  inlineElementId = INLINE_CHECKOUT_ELEMENT_ID
 ): Promise<void> {
   if (session.simulated || !session.checkoutUrl) {
     // No live Dodo session (simulate mode): the purchase is already active.
@@ -57,7 +58,7 @@ export async function launchCheckout(
       await openOverlayCheckout(session.checkoutUrl);
       break;
     case "inline":
-      await openInlineCheckout(session.checkoutUrl, INLINE_CHECKOUT_ELEMENT_ID);
+      await openInlineCheckout(session.checkoutUrl, inlineElementId);
       break;
   }
 }

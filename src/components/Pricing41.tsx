@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import {
   formatPrice,
   GROUP_META,
@@ -104,13 +104,26 @@ interface CardProps {
   tier: PriceTier;
   loading: boolean;
   cycle: "monthly" | "yearly";
+  inlineOpen: boolean;
+  inlineElementId: string;
   onBuy: () => void;
+  onCloseInlineCheckout: () => void;
   // Receives the cycle state from the parent so inline checkout mode still
   // can read the selected cycle; each card owns its own local toggle too.
   onCycleChange: (cycle: "monthly" | "yearly") => void;
 }
 
-function PricingCard41({ product, tier, loading, cycle, onBuy, onCycleChange }: CardProps) {
+function PricingCard41({
+  product,
+  tier,
+  loading,
+  cycle,
+  inlineOpen,
+  inlineElementId,
+  onBuy,
+  onCloseInlineCheckout,
+  onCycleChange,
+}: CardProps) {
   const cycleSensitive = isCycleSensitive(product.group);
 
   function handleCycle(v: "monthly" | "yearly") {
@@ -176,7 +189,7 @@ function PricingCard41({ product, tier, loading, cycle, onBuy, onCycleChange }: 
       {/* CTA */}
       <button
         onClick={onBuy}
-        disabled={loading}
+        disabled={loading || inlineOpen}
         className={`mt-5 flex w-full items-center justify-center rounded-xl py-2.5 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2 disabled:opacity-60 ${
           tier.highlighted
             ? "bg-ink-900 text-white hover:bg-ink-800"
@@ -186,9 +199,33 @@ function PricingCard41({ product, tier, loading, cycle, onBuy, onCycleChange }: 
         {loading ? (
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
         ) : (
-          product.ctaLabel
+          inlineOpen ? "Checkout open" : product.ctaLabel
         )}
       </button>
+
+      {inlineOpen && (
+        <div className="mt-5 border-t border-ink-100 pt-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-ink-900">Complete checkout</p>
+              <p className="text-xs text-ink-500">Secure payment by Dodo Payments</p>
+            </div>
+            <button
+              type="button"
+              onClick={onCloseInlineCheckout}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-ink-200 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
+              aria-label="Cancel checkout"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          <div
+            id={inlineElementId}
+            className="min-h-[620px] overflow-hidden rounded-xl border border-ink-100 bg-white"
+            aria-label="Inline checkout"
+          />
+        </div>
+      )}
 
       {/* Divider */}
       <div className="my-5 border-t border-ink-100" />
@@ -218,8 +255,11 @@ interface Pricing41Props {
   shelf: { product: Product; tier: PriceTier }[];
   loadingTier: string | null;
   globalCycle: "monthly" | "yearly";
+  inlineTierId: string | null;
+  inlineElementId: string;
   onCycleChange: (tierId: string, cycle: "monthly" | "yearly") => void;
   onBuy: (product: Product, tier: PriceTier) => void;
+  onCloseInlineCheckout: () => void;
 }
 
 import useEmblaCarousel from "embla-carousel-react";
@@ -229,8 +269,11 @@ export function Pricing41({
   shelf,
   loadingTier,
   globalCycle,
+  inlineTierId,
+  inlineElementId,
   onCycleChange,
   onBuy,
+  onCloseInlineCheckout,
 }: Pricing41Props) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { align: "start", loop: false },
@@ -249,6 +292,13 @@ export function Pricing41({
     onSelect();
   }, [emblaApi]);
 
+  useEffect(() => {
+    if (!emblaApi || !inlineTierId) return;
+    const index = shelf.findIndex(({ tier }) => tier.id === inlineTierId);
+    emblaApi.reInit();
+    if (index >= 0) emblaApi.scrollTo(index);
+  }, [emblaApi, inlineTierId, shelf]);
+
   const prev = () => emblaApi && emblaApi.scrollPrev();
   const next = () => emblaApi && emblaApi.scrollNext();
   const scrollTo = (index: number) => emblaApi && emblaApi.scrollTo(index);
@@ -257,18 +307,30 @@ export function Pricing41({
     <div className="relative">
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex -ml-4">
-          {shelf.map(({ product, tier }) => (
-            <div key={tier.id} className="min-w-0 shrink-0 grow-0 pl-4 w-[320px]">
-              <PricingCard41
-                product={product}
-                tier={tier}
-                loading={loadingTier === tier.id}
-                cycle={globalCycle}
-                onBuy={() => onBuy(product, tier)}
-                onCycleChange={(c) => onCycleChange(tier.id, c)}
-              />
-            </div>
-          ))}
+          {shelf.map(({ product, tier }) => {
+            const inlineOpen = inlineTierId === tier.id;
+
+            return (
+              <div
+                key={tier.id}
+                className={`min-w-0 shrink-0 grow-0 pl-4 transition-[width] duration-300 ${
+                  inlineOpen ? "w-[min(92vw,720px)]" : "w-[320px]"
+                }`}
+              >
+                <PricingCard41
+                  product={product}
+                  tier={tier}
+                  loading={loadingTier === tier.id}
+                  cycle={globalCycle}
+                  inlineOpen={inlineOpen}
+                  inlineElementId={inlineElementId}
+                  onBuy={() => onBuy(product, tier)}
+                  onCloseInlineCheckout={onCloseInlineCheckout}
+                  onCycleChange={(c) => onCycleChange(tier.id, c)}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
