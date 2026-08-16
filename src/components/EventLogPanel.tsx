@@ -68,7 +68,7 @@ export function EventLogPanel({ events, simulated }: Props) {
   }, [simulated, events.length]);
 
   return (
-    <Card className="flex h-full flex-col p-5">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden p-5">
       <div className="flex items-center gap-2">
         <span className="grid h-7 w-7 place-items-center rounded-full bg-ink-900 text-lime-300">
           <Radio size={14} />
@@ -89,7 +89,7 @@ export function EventLogPanel({ events, simulated }: Props) {
           </p>
         </div>
       ) : (
-        <ul className="mt-4 max-h-72 flex-1 divide-y divide-ink-100 overflow-y-auto pr-1">
+        <ul className="mt-4 min-h-0 flex-1 divide-y divide-ink-100 overflow-y-auto pr-1">
           {events.map((e) => (
             <li key={e.id} className="flex items-center justify-between gap-3 py-2.5 animate-fade-up">
               <div className="min-w-0">
