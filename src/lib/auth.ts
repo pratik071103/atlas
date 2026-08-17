@@ -36,6 +36,12 @@ export const auth = betterAuth({
   database: mongodbAdapter(mongoDb),
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET ?? "atlas-studio-dev-secret-change-me",
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+  ].filter(Boolean) as string[],
 
   emailAndPassword: {
     enabled: true,

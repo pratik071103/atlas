@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Inbox, RefreshCw } from "lucide-react";
+import { ChevronDown, Inbox, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -94,21 +94,29 @@ export default function DevWebhooksPage() {
           {events.map((e) => (
             <li key={e.id}>
               <Card className="p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <code className="rounded bg-ink-100 px-2 py-0.5 font-mono text-xs font-medium text-ink-800">
-                    {e.eventType}
-                  </code>
-                  <Badge tone={STATUS_TONE[e.status] ?? "ink"}>{e.status}</Badge>
-                  <span className="ml-auto text-xs text-ink-400" title={e.createdAt}>
-                    {new Date(e.createdAt).toLocaleString()}
-                  </span>
-                </div>
-                <p className="mt-2 truncate text-xs text-ink-400" title={e.eventId ?? undefined}>
-                  dedupe-key: {e.eventId ?? "n/a"}
-                </p>
-                <pre className="mt-2 overflow-x-auto rounded-lg bg-ink-50 p-3 font-mono text-xs leading-relaxed text-ink-700">
-                  {e.payloadPreview}
-                </pre>
+                <details className="group">
+                  <summary className="cursor-pointer list-none outline-none focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ChevronDown
+                        size={15}
+                        className="shrink-0 text-ink-400 transition-transform group-open:rotate-180"
+                      />
+                      <code className="rounded bg-ink-100 px-2 py-0.5 font-mono text-xs font-medium text-ink-800">
+                        {e.eventType}
+                      </code>
+                      <Badge tone={STATUS_TONE[e.status] ?? "ink"}>{e.status}</Badge>
+                      <span className="ml-auto text-xs text-ink-400" title={e.createdAt}>
+                        {new Date(e.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="mt-2 truncate text-xs text-ink-400" title={e.eventId ?? undefined}>
+                      dedupe-key: {e.eventId ?? "n/a"}
+                    </p>
+                  </summary>
+                  <pre className="mt-3 max-h-[32rem] overflow-auto rounded-lg bg-ink-50 p-3 font-mono text-xs leading-relaxed text-ink-700">
+                    {e.payload}
+                  </pre>
+                </details>
               </Card>
             </li>
           ))}

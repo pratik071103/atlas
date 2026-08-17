@@ -259,8 +259,8 @@ export function DashboardClient() {
         />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
+      <div className="mt-8 grid items-stretch gap-6 lg:grid-cols-5">
+        <div className="flex flex-col gap-6 lg:col-span-3">
           <PlaygroundButtons
             wallet={wallet}
             simulated={data?.simulated ?? true}
@@ -269,12 +269,14 @@ export function DashboardClient() {
           />
           <PurchaseLibrary purchases={purchases} />
         </div>
-        <div className="space-y-6 lg:col-span-2">
+        <div className="flex min-h-0 flex-col gap-6 lg:col-span-2">
           <SubscriptionCard subscription={activePlan} onChanged={() => void load()} />
-          <EventLogPanel
-            events={data?.usageEvents ?? []}
-            simulated={data?.simulated ?? true}
-          />
+          <div className="min-h-0 flex-1">
+            <EventLogPanel
+              events={data?.usageEvents ?? []}
+              simulated={data?.simulated ?? true}
+            />
+          </div>
         </div>
       </div>
 

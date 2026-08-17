@@ -151,7 +151,6 @@ export async function POST(request: Request) {
               subscription_data: {
                 on_demand: {
                   mandate_only: true,
-                  product_price: toMinorUnits(amount),
                   adaptive_currency_fees_inclusive: true,
                   product_description: productName,
                 },

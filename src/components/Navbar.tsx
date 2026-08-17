@@ -10,7 +10,6 @@ import { Badge } from "./ui/Badge";
 import { Skeleton } from "./ui/Skeleton";
 
 const PUBLIC_LINKS = [
-  { href: "/", label: "Home" },
   { href: "/pricing", label: "Pricing" },
   { href: "/studio", label: "Studio" },
 ];

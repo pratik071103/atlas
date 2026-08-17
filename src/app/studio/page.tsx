@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Lock, Sparkles } from "lucide-react";
+import { Lock, Sparkles, X } from "lucide-react";
 import { SHELF } from "@shared/catalog";
 import { LicenseUnlockCard } from "@/components/LicenseUnlockCard";
 import { ProductArt } from "@/components/ProductArt";
@@ -32,6 +32,7 @@ export default function StudioPage() {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [unlocked, setUnlocked] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [unlockOpen, setUnlockOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!identity) {
@@ -74,10 +75,29 @@ export default function StudioPage() {
         </Badge>
       </div>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="mt-10">
         <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {GALLERY.map((piece) => (
-            <figure key={piece.id} className="overflow-hidden rounded-xl2 border border-ink-100 bg-white shadow-soft">
+            <figure
+              key={piece.id}
+              role={!unlocked ? "button" : undefined}
+              tabIndex={!unlocked ? 0 : undefined}
+              aria-label={!unlocked ? `Unlock ${piece.title}` : piece.title}
+              onClick={() => {
+                if (!unlocked) setUnlockOpen(true);
+              }}
+              onKeyDown={(event) => {
+                if (!unlocked && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  setUnlockOpen(true);
+                }
+              }}
+              className={`overflow-hidden rounded-xl2 border border-ink-100 bg-white shadow-soft ${
+                !unlocked
+                  ? "cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2"
+                  : ""
+              }`}
+            >
               <div className="relative">
                 <ProductArt
                   art={piece.art}
@@ -99,27 +119,57 @@ export default function StudioPage() {
             </figure>
           ))}
         </div>
-
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          {sessionLoading || loading ? (
-            <Skeleton className="h-64 rounded-xl2" />
-          ) : !identity ? (
-            <Card className="p-5">
-              <h2 className="text-sm font-bold text-ink-900">Sign in to use a key</h2>
-              <p className="mt-2 text-sm text-ink-600">
-                Continue as a guest — keys you activate now follow you if you sign up later.
-              </p>
-              <div className="mt-4">
-                <CtaButton fullWidth arrow onClick={() => openAuthModal()}>
-                  Continue as guest
-                </CtaButton>
-              </div>
-            </Card>
-          ) : (
-            <LicenseUnlockCard licenses={licenses} unlocked={unlocked} onChange={load} />
-          )}
-        </aside>
       </div>
+
+      {unlockOpen && !unlocked && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-ink-900/45 px-4 py-8 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unlock-dialog-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setUnlockOpen(false);
+          }}
+        >
+          <div className="relative max-h-[min(90vh,44rem)] w-full max-w-md overflow-y-auto rounded-xl2 bg-white p-5 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setUnlockOpen(false)}
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-ink-200 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
+              aria-label="Close unlock dialog"
+            >
+              <X size={16} />
+            </button>
+            <div className="pr-10">
+              <h2 id="unlock-dialog-title" className="text-lg font-bold text-ink-900">
+                Unlock this artwork
+              </h2>
+              <p className="mt-1 text-sm text-ink-600">
+                Enter your secret key to view the premium gallery.
+              </p>
+            </div>
+            <div className="mt-5">
+              {sessionLoading || loading ? (
+                <Skeleton className="h-64 rounded-xl2" />
+              ) : !identity ? (
+                <Card className="p-5">
+                  <h3 className="text-sm font-bold text-ink-900">Sign in to use a key</h3>
+                  <p className="mt-2 text-sm text-ink-600">
+                    Continue as a guest — keys you activate now follow you if you sign up later.
+                  </p>
+                  <div className="mt-4">
+                    <CtaButton fullWidth arrow onClick={() => openAuthModal()}>
+                      Continue as guest
+                    </CtaButton>
+                  </div>
+                </Card>
+              ) : (
+                <LicenseUnlockCard licenses={licenses} unlocked={unlocked} onChange={load} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

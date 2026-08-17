@@ -100,7 +100,7 @@ export interface WebhookEventRow {
   status: string;
   eventId: string | null;
   createdAt: string;
-  payloadPreview: string;
+  payload: string;
 }
 
 export interface BillingSnapshot {

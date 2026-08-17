@@ -30,15 +30,16 @@ const STATUS_TONE: Record<string, "lime" | "lavender" | "ink" | "red"> = {
 
 interface Props {
   purchases: Purchase[];
+  className?: string;
 }
 
-export function PurchaseLibrary({ purchases }: Props) {
+export function PurchaseLibrary({ purchases, className }: Props) {
   const owned = purchases.filter((p) => p.status === "active" || p.status === "scheduled_cancel");
   const ownedTierIds = new Set(owned.map((p) => p.tierId));
   const locked = SHELF.filter(({ tier }) => !ownedTierIds.has(tier.id));
 
   return (
-    <Card className="flex flex-col p-5">
+    <Card className={`flex flex-col p-5${className ? ` ${className}` : ""}`}>
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold text-ink-900">Your library</h2>
         {owned.length > 0 && (
