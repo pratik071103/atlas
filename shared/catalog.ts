@@ -6,10 +6,10 @@
 // render from the same objects. Nothing here is server-only, so it is safe to
 // import from client components.
 //
-// `dodoProductId` is the id of the product you create in the Dodo Payments
-// dashboard (test mode) for each tier. Create products with matching prices
-// and billing intervals, then paste the ids here. In simulate mode they are
-// never sent anywhere.
+// Dodo product ids are deliberately *not* here: the ids of the products you
+// create in the Dodo dashboard (test or live mode) for each tier live in
+// environment variables (DODO_PRODUCT_*), resolved by the server-only
+// src/lib/dodo-catalog.ts.
 // ---------------------------------------------------------------------------
 
 export type BillingModel =
@@ -51,8 +51,6 @@ export interface PriceTier {
   description: string;
   features: string[];
   highlighted?: boolean;
-  /** Dodo Payments product id for this tier (from the Dodo dashboard). */
-  dodoProductId: string;
   art: ArtSpec;
 }
 
@@ -110,7 +108,6 @@ export const CATALOG: Product[] = [
         monthly: 9,
         yearly: 9,
         credits: 5,
-        dodoProductId: "pdt_0NlXH5iUe1CIsMHLJyzWs",
         description: "One-time purchase, credits never expire.",
         features: [
           "5 image-generation credits",
@@ -134,7 +131,6 @@ export const CATALOG: Product[] = [
         monthly: 10,
         yearly: 96,
         credits: 25,
-        dodoProductId: "pdt_0NlXH5jKlUwUwrJadVQEz",
         description: "Good for trying Atlas out.",
         features: ["25 plan credits / month", "Standard queue", "Email support"],
         art: { from: "#fafef0", to: "#d3f16f", accent: "#6d8e15", motif: "orbit", seed: "starter" },
@@ -145,7 +141,6 @@ export const CATALOG: Product[] = [
         monthly: 24,
         yearly: 230,
         credits: 80,
-        dodoProductId: "pdt_0NlXH5kIRGmCeh1PaeWCV",
         description: "For creators who ship weekly.",
         features: ["80 plan credits / month", "Priority queue", "Email + chat support"],
         highlighted: true,
@@ -157,7 +152,6 @@ export const CATALOG: Product[] = [
         monthly: 49,
         yearly: 470,
         credits: 200,
-        dodoProductId: "pdt_0NlXH5lRRoJbMHFf1yqvD",
         description: "For studios and power users.",
         features: ["200 plan credits / month", "Fastest queue", "Priority support"],
         art: { from: "#d3f16f", to: "#485c17", accent: "#fafef0", motif: "waves", seed: "pro" },
@@ -177,7 +171,6 @@ export const CATALOG: Product[] = [
         label: "Pay-per-image",
         monthly: 0.4,
         yearly: 0.4,
-        dodoProductId: "pdt_0NlXH5mD4LhsoRLPH2y7f",
         description: "$0.40 per image, billed at the end of the cycle.",
         features: [
           "No minimum spend",
@@ -202,7 +195,6 @@ export const CATALOG: Product[] = [
         yearly: 80,
         seats: 1,
         credits: 20,
-        dodoProductId: "pdt_0NlXH5n3AIXFj9DeGKIdv",
         description: "Billed per active teammate, per month.",
         features: ["20 plan credits / seat / month", "Per-seat usage history", "Remove anytime"],
         art: { from: "#f7f6fe", to: "#a488e6", accent: "#0c0f0c", motif: "grid", seed: "seat" },
@@ -222,7 +214,6 @@ export const CATALOG: Product[] = [
         monthly: 10,
         yearly: 10,
         credits: 100,
-        dodoProductId: "pdt_0NlXH5rFpWRjgVKyykD1X",
         description: "Prepaid credits, never expire.",
         features: ["100 top-up credits", "No recurring charge", "Stack with any plan"],
         art: { from: "#f2fbd4", to: "#aede1f", accent: "#0c0f0c", motif: "waves", seed: "topup100" },
@@ -233,7 +224,6 @@ export const CATALOG: Product[] = [
         monthly: 40,
         yearly: 40,
         credits: 500,
-        dodoProductId: "pdt_0NlXH5tjBLqw8NBm4QKJw",
         description: "Best value top-up.",
         features: ["500 top-up credits", "20% cheaper per credit", "No recurring charge"],
         highlighted: true,
@@ -255,7 +245,6 @@ export const CATALOG: Product[] = [
         label: "Lifetime Pass",
         monthly: 29,
         yearly: 29,
-        dodoProductId: "pdt_0NlXH5wMMMqB0a5K0yjq4",
         description: "Issues a license key you activate to reveal the gallery.",
         features: [
           "Dodo-issued license key",

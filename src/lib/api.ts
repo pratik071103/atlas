@@ -159,10 +159,17 @@ export const api = {
       body: JSON.stringify({ status, message }),
     }),
 
-  changePlan: (purchaseId: string, tierId: string) =>
+  changePlan: (purchaseId: string, tierId: string, options?: {
+    proration_billing_mode?: string;
+    effective_at?: string;
+    on_payment_failure?: string;
+    discount_codes?: string[];
+    adaptive_currency_fees_inclusive?: boolean;
+    quantity?: number;
+  }) =>
     request<{ applied: boolean; pendingTierId: string; productName: string }>(
       `/billing/subscription/${purchaseId}/change-plan`,
-      { method: "POST", body: JSON.stringify({ tierId }) }
+      { method: "POST", body: JSON.stringify({ tierId, ...options }) }
     ),
 
   cancelSubscription: (purchaseId: string, mode: "immediate" | "schedule") =>

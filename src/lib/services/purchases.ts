@@ -308,7 +308,7 @@ export async function repointPurchaseTier(
     amount: number;
     creditsGranted: number;
     creditBucket: CreditBucket;
-    dodoProductId: string;
+    dodoProductId: string | null;
   }
 ): Promise<void> {
   const c = await getCollections();

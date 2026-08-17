@@ -3,6 +3,7 @@ import "server-only";
 import { creditBucketFor, findProduct, type Product } from "@shared/catalog";
 import { getCollections, type PurchaseDoc } from "@/lib/db";
 import { getDodoClient, SIMULATE_PAYMENTS } from "@/lib/dodo";
+import { dodoProductIdFor } from "@/lib/dodo-catalog";
 import {
   refreshPlanAllowance,
   repointPurchaseTier,
@@ -39,6 +40,15 @@ function assertChangeable(purchase: PurchaseDoc | null): asserts purchase is Pur
   }
 }
 
+export interface ChangePlanOptions {
+  proration_billing_mode?: "prorated_immediately" | "full_immediately" | "difference_immediately" | "do_not_bill";
+  effective_at?: "immediately" | "next_billing_date";
+  on_payment_failure?: "prevent_change" | "apply_change";
+  discount_codes?: string[];
+  adaptive_currency_fees_inclusive?: boolean;
+  quantity?: number;
+}
+
 export interface ChangePlanResult {
   /** True when the new tier is already live (simulate mode only). */
   applied: boolean;
@@ -60,7 +70,8 @@ export interface ChangePlanResult {
  */
 export async function changePlan(
   purchase: PurchaseDoc | null,
-  targetTierId: string
+  targetTierId: string,
+  options: ChangePlanOptions = {}
 ): Promise<ChangePlanResult> {
   assertChangeable(purchase);
 
@@ -69,6 +80,14 @@ export async function changePlan(
   if (!product || !target) throw new SubscriptionError("Unknown target plan.", 400);
   if (target.id === purchase.tierId) {
     throw new SubscriptionError("That is already the current plan.", 400);
+  }
+
+  // Dodo constraint: effective_at=next_billing_date only allows full_immediately proration
+  if (options.effective_at === "next_billing_date" && options.proration_billing_mode !== "full_immediately") {
+    throw new SubscriptionError(
+      "Scheduled plan changes (next_billing_date) require proration mode 'full_immediately'.",
+      400
+    );
   }
 
   const c = await getCollections();
@@ -85,20 +104,39 @@ export async function changePlan(
       amount: purchase.billingCycle === "yearly" ? target.yearly : target.monthly,
       creditsGranted: target.credits ?? 0,
       creditBucket: creditBucketFor(product.group),
-      dodoProductId: target.dodoProductId,
+      dodoProductId: dodoProductIdFor(target.id),
     });
     await refreshPlanAllowance(purchase.userId, `Plan changed: ${productName}`);
     return { applied: true, pendingTierId: target.id, productName };
   }
 
+  const dodoProductId = dodoProductIdFor(target.id);
+  if (!dodoProductId) {
+    throw new SubscriptionError(
+      `No Dodo product id configured for tier "${target.id}" — set the DODO_PRODUCT_* env var.`,
+      500
+    );
+  }
+
   try {
-    await getDodoClient().subscriptions.changePlan(purchase.dodoSubscriptionId, {
-      product_id: target.dodoProductId,
-      proration_billing_mode: "prorated_immediately",
-      quantity: 1,
-    });
+    // Build options object, omitting undefined values to avoid SDK issues
+    const dodoOptions = {
+      product_id: dodoProductId,
+      proration_billing_mode: options.proration_billing_mode ?? "prorated_immediately",
+      quantity: options.quantity ?? 1,
+      ...(options.effective_at && { effective_at: options.effective_at }),
+      ...(options.on_payment_failure && { on_payment_failure: options.on_payment_failure }),
+      ...(options.discount_codes && options.discount_codes.length > 0 && { discount_codes: options.discount_codes }),
+      ...(typeof options.adaptive_currency_fees_inclusive === "boolean" && { adaptive_currency_fees_inclusive: options.adaptive_currency_fees_inclusive }),
+    };
+
+    await getDodoClient().subscriptions.changePlan(purchase.dodoSubscriptionId, dodoOptions);
   } catch (err) {
     console.error("[subscriptions] Dodo change-plan failed:", err);
+    // Log the actual error for debugging
+    if (err instanceof Error) {
+      console.error("[subscriptions] Error details:", err.message, err.stack);
+    }
     throw new SubscriptionError("Could not change the plan with Dodo Payments.", 502);
   }
 

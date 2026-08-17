@@ -1,7 +1,8 @@
 import "server-only";
 
-import { CATALOG, creditBucketFor, type PriceTier, type Product } from "@shared/catalog";
+import { creditBucketFor } from "@shared/catalog";
 import { getCollections, newId, type PurchaseDoc } from "@/lib/db";
+import { dodoProductIdFor, tierByDodoProductId } from "@/lib/dodo-catalog";
 import { recordIssuedLicense } from "./licenses";
 import {
   activatePurchase,
@@ -104,18 +105,6 @@ async function resolve(type: string, payload: WebhookPayload): Promise<PurchaseD
     subscriptionId: typeof data.subscription_id === "string" ? data.subscription_id : null,
   });
   return purchase;
-}
-
-/** Finds the catalog tier a Dodo product id belongs to. */
-function tierByDodoProductId(
-  productId: unknown
-): { product: Product; tier: PriceTier } | null {
-  if (typeof productId !== "string") return null;
-  for (const product of CATALOG) {
-    const tier = product.tiers.find((t) => t.dodoProductId === productId);
-    if (tier) return { product, tier };
-  }
-  return null;
 }
 
 /**
@@ -223,7 +212,7 @@ export const webhookHandlers = {
       amount: p.billingCycle === "yearly" ? tier.yearly : tier.monthly,
       creditsGranted: tier.credits ?? 0,
       creditBucket: creditBucketFor(product.group),
-      dodoProductId: tier.dodoProductId,
+      dodoProductId: dodoProductIdFor(tier.id),
     });
     await setPurchaseStatus(p._id, "active");
     await refreshPlanAllowance(p.userId, `Plan changed: ${product.name} — ${tier.label}`);

@@ -29,7 +29,10 @@ export const authClient = createAuthClient({
     // which would pull the server auth module — and everything it imports,
     // including the Mongo client — into the browser bundle.
     inferAdditionalFields({
-      user: { checkoutTheme: { type: "string", required: false } },
+      user: { 
+        checkoutTheme: { type: "string", required: false },
+        dodoCustomerId: { type: "string", required: false },
+      },
     }),
   ],
 });
@@ -45,4 +48,6 @@ export interface SessionIdentity {
   image: string | null;
   /** Palette Dodo renders checkout in; edited from the profile page. */
   checkoutTheme: "light" | "dark" | "system";
+  /** Dodo customer id — null until a purchase is completed. */
+  dodoCustomerId: string | null;
 }

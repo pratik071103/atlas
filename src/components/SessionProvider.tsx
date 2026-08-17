@@ -43,6 +43,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const user = session.user as typeof session.user & {
       isAnonymous?: boolean | null;
       checkoutTheme?: string | null;
+      dodoCustomerId?: string | null;
     };
     const isAnonymous = Boolean(user.isAnonymous);
     const theme = user.checkoutTheme;
@@ -55,6 +56,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       email: isAnonymous ? null : user.email || null,
       image: user.image ?? null,
       checkoutTheme: theme === "dark" || theme === "system" ? theme : "light",
+      dodoCustomerId: user.dodoCustomerId ?? null,
     };
   }, [session]);
 
