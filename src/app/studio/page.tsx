@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Lock, Sparkles, X } from "lucide-react";
-import { SHELF } from "@shared/catalog";
 import { LicenseUnlockCard } from "@/components/LicenseUnlockCard";
-import { ProductArt } from "@/components/ProductArt";
 import { useSession } from "@/components/SessionProvider";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -20,12 +18,6 @@ import { api, type License } from "@/lib/api";
 // mounted the whole time, so it is one CSS transition rather than an asset
 // swap. Deactivating the key blurs them straight back.
 // ---------------------------------------------------------------------------
-
-const GALLERY = SHELF.map(({ product, tier }) => ({
-  id: tier.id,
-  title: `${product.name} — ${tier.label}`,
-  art: tier.art,
-}));
 
 export default function StudioPage() {
   const { identity, loading: sessionLoading, openAuthModal } = useSession();
@@ -76,13 +68,11 @@ export default function StudioPage() {
       </div>
 
       <div className="mt-10">
-        <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {GALLERY.map((piece) => (
+        <div className="stagger mx-auto max-w-4xl">
             <figure
-              key={piece.id}
               role={!unlocked ? "button" : undefined}
               tabIndex={!unlocked ? 0 : undefined}
-              aria-label={!unlocked ? `Unlock ${piece.title}` : piece.title}
+              aria-label={!unlocked ? "Unlock premium artwork" : "Premium artwork"}
               onClick={() => {
                 if (!unlocked) setUnlockOpen(true);
               }}
@@ -99,11 +89,10 @@ export default function StudioPage() {
               }`}
             >
               <div className="relative">
-                <ProductArt
-                  art={piece.art}
-                  alt={piece.title}
-                  blurred={!unlocked}
-                  className="aspect-[4/3]"
+                <img
+                  src="/dodo.webp"
+                  alt="Premium artwork"
+                  className={`block aspect-[16/9] w-full object-cover transition duration-700 ${!unlocked ? "blur-xl" : ""}`}
                 />
                 {!unlocked && (
                   <span className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -114,10 +103,9 @@ export default function StudioPage() {
                 )}
               </div>
               <figcaption className="px-4 py-3 text-sm font-semibold text-ink-900">
-                {piece.title}
+                Premium artwork
               </figcaption>
             </figure>
-          ))}
         </div>
       </div>
 
