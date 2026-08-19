@@ -140,6 +140,16 @@ export async function acceptInvite(
         `Joined team: ${team.name}`,
         `join-team:${member._id}`
       );
+
+      // Deduct the seat credits from the owner's wallet (since the owner was granted all seat credits initially).
+      await grantCreditsWithin(
+        session,
+        team.ownerId,
+        "plan",
+        -creditsPerSeat,
+        `Teammate joined: ${userId}`,
+        `deduct-owner-join:${member._id}`
+      );
     }
 
     return {

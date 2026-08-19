@@ -40,7 +40,7 @@ export default async function InvitePage({ params }: Props) {
 
   // Check if the visitor is already signed in.
   const session = await auth.api.getSession({ headers: await headers() });
-  const isSignedIn = Boolean(session?.user);
+  const isSignedIn = Boolean(session?.user && !(session.user as any).isAnonymous);
   const alreadyMember = isSignedIn
     ? Boolean(await c.teamMembers.findOne({ teamId: team._id, userId: session!.user.id, status: "active" }))
     : false;

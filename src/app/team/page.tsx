@@ -74,7 +74,6 @@ export default function TeamPage() {
 
   const [buyQty, setBuyQty] = useState(1);
   const [buying, setBuying] = useState(false);
-  const [removing, setRemoving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!identity) { setLoading(false); return; }
@@ -113,19 +112,6 @@ export default function TeamPage() {
       setError((e as Error).message);
     } finally {
       setBuying(false);
-    }
-  }
-
-  async function handleRemove(memberId: string) {
-    setRemoving(memberId);
-    setError(null);
-    try {
-      await api.removeMember(memberId);
-      setMembers((prev) => prev.filter((m) => m.id !== memberId));
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setRemoving(null);
     }
   }
 
@@ -233,13 +219,15 @@ export default function TeamPage() {
         <Card className="mt-4 border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</Card>
       )}
 
-      {/* Seat bar */}
-      <Card className="mt-6 p-5">
-        <SeatBar used={usedSeats} total={activeTeam.seatCount} />
-      </Card>
+      {/* Seat bar (owner only) */}
+      {isOwner && (
+        <Card className="mt-6 p-5">
+          <SeatBar used={usedSeats} total={activeTeam.seatCount} />
+        </Card>
+      )}
 
-      {/* Active members */}
-      {activeMembers.length > 0 && (
+      {/* Active members (owner only) */}
+      {isOwner && activeMembers.length > 0 && (
         <Card className="mt-4 p-5">
           <h2 className="text-sm font-bold text-ink-900 flex items-center gap-2">
             <UserCheck size={14} /> Active members ({activeMembers.length})
@@ -259,20 +247,6 @@ export default function TeamPage() {
                   )}
                 </div>
                 <Badge tone="lime">Active</Badge>
-                {isOwner && (
-                  <button
-                    onClick={() => handleRemove(m.id)}
-                    disabled={removing === m.id}
-                    title="Remove member"
-                    className="ml-2 grid h-7 w-7 place-items-center rounded-full text-ink-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
-                  >
-                    {removing === m.id ? (
-                      <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    ) : (
-                      <Trash2 size={13} />
-                    )}
-                  </button>
-                )}
               </li>
             ))}
           </ul>
@@ -304,39 +278,6 @@ export default function TeamPage() {
               </li>
             ))}
           </ul>
-        </Card>
-      )}
-
-      {/* Buy more seats (owner only) */}
-      {isOwner && (
-        <Card className="mt-4 p-5">
-          <h2 className="text-sm font-bold text-ink-900 flex items-center gap-2">
-            <Plus size={14} /> Add more seats
-          </h2>
-          <p className="mt-1 text-xs text-ink-500 mb-4">
-            Each new seat generates a new invite link and adds 20 monthly credits.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setBuyQty((q) => Math.max(1, q - 1))}
-              className="grid h-8 w-8 place-items-center rounded-full border border-ink-200 hover:bg-ink-50"
-            >
-              <Minus size={14} />
-            </button>
-            <span className="w-8 text-center font-bold text-ink-900">{buyQty}</span>
-            <button
-              onClick={() => setBuyQty((q) => Math.min(50, q + 1))}
-              className="grid h-8 w-8 place-items-center rounded-full border border-ink-200 hover:bg-ink-50"
-            >
-              <Plus size={14} />
-            </button>
-            <span className="text-sm text-ink-600">
-              = <strong>+${buyQty * 8}</strong>/month
-            </span>
-            <Button onClick={handleBuyMore} loading={buying} variant="secondary" className="ml-auto gap-1.5">
-              <ShoppingCart size={13} /> Buy {buyQty} seat{buyQty !== 1 ? "s" : ""}
-            </Button>
-          </div>
         </Card>
       )}
 

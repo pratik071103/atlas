@@ -94,7 +94,7 @@ export default function PricingPage() {
 
   async function handleBuySeats() {
     setError(null);
-    if (!identity) {
+    if (!identity || identity.kind === "guest") {
       openAuthModal();
       return;
     }

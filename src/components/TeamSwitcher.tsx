@@ -141,18 +141,6 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
             {context === "team" && <Check size={13} className="text-lavender-600" />}
           </button>
 
-          {/* Manage link (visible for owners) */}
-          {team && (
-            <div className="border-t border-ink-100 p-2">
-              <a
-                href="/team"
-                onClick={() => setOpen(false)}
-                className="block rounded-lg px-3 py-1.5 text-xs font-medium text-ink-500 hover:bg-ink-50 hover:text-ink-800 transition-colors"
-              >
-                Manage team →
-              </a>
-            </div>
-          )}
         </div>
       )}
     </div>

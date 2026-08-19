@@ -62,6 +62,17 @@ export async function POST(request: Request) {
     const seatQty =
       product.group === "seat_based" ? Math.max(1, Math.floor(Number(body.quantity) || 1)) : 1;
 
+    if (product.group === "seat_based") {
+      if (identity.isAnonymous) {
+        return fail("You must create an account to purchase a seat-based workspace.", 403);
+      }
+      const { getTeamByOwner } = await import("@/lib/services/teams");
+      const existingTeam = await getTeamByOwner(identity.userId);
+      if (existingTeam) {
+        return fail("seat based billing already previously purchased", 403);
+      }
+    }
+
     const base = {
       id: purchaseId,
       userId: identity.userId,

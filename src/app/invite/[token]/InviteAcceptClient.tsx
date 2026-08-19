@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -29,13 +29,17 @@ export function InviteAcceptClient({
   alreadyMember,
 }: Props) {
   const router = useRouter();
-  const [tab, setTab] = useState<"signin" | "signup">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+
+  // Force sign out on mount to clear any active owner/guest session.
+  useEffect(() => {
+    void authClient.signOut();
+  }, []);
 
   // --- Token invalid / expired ---
   if (invalid) {
@@ -111,25 +115,13 @@ export function InviteAcceptClient({
     }
   }
 
-  async function handleSignIn(e: FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await authClient.signIn.email({ email, password });
-      if (result.error) throw new Error(result.error.message ?? "Sign in failed.");
-      await acceptAndRedirect();
-    } catch (err) {
-      setError((err as Error).message);
-      setLoading(false);
-    }
-  }
-
   async function handleSignUp(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
+      // Clear session first to be absolutely sure.
+      await authClient.signOut();
       const result = await authClient.signUp.email({ email, password, name });
       if (result.error) throw new Error(result.error.message ?? "Sign up failed.");
       await acceptAndRedirect();
@@ -165,88 +157,32 @@ export function InviteAcceptClient({
 
         {/* Auth / confirm card */}
         <Card className="p-6">
-          {isSignedIn ? (
-            /* Already signed in — just confirm */
-            <div className="space-y-4 text-center">
-              <h2 className="text-lg font-bold text-ink-900">Join as yourself?</h2>
-              <p className="text-sm text-ink-500">
-                Click below to accept this invite and join <strong>{teamName}</strong>.
-              </p>
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-              )}
-              <Button onClick={acceptAndRedirect} loading={loading} className="w-full">
-                Accept invitation →
-              </Button>
-            </div>
-          ) : (
-            /* Not signed in — show inline auth */
-            <>
-              {/* Tab switcher */}
-              <div className="flex rounded-lg border border-ink-200 p-0.5 mb-5">
-                {(["signup", "signin"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={`flex-1 rounded-md py-1.5 text-sm font-semibold transition-all ${
-                      tab === t
-                        ? "bg-ink-900 text-white shadow-sm"
-                        : "text-ink-500 hover:text-ink-800"
-                    }`}
-                  >
-                    {t === "signup" ? "Create account" : "Sign in"}
-                  </button>
-                ))}
-              </div>
+          <h2 className="text-lg font-bold text-ink-900 mb-4 text-center">Create account</h2>
 
-              {error && (
-                <p className="mb-4 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-              )}
-
-              {tab === "signup" ? (
-                <form onSubmit={handleSignUp} className="space-y-3">
-                  <Input label="Name" value={name} onChange={setName} placeholder="Ada Lovelace" />
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={email}
-                    onChange={setEmail}
-                    placeholder="ada@example.com"
-                  />
-                  <Input
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={setPassword}
-                    placeholder="••••••••"
-                  />
-                  <Button type="submit" loading={loading} className="w-full mt-1">
-                    Create account & join team →
-                  </Button>
-                </form>
-              ) : (
-                <form onSubmit={handleSignIn} className="space-y-3">
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={email}
-                    onChange={setEmail}
-                    placeholder="ada@example.com"
-                  />
-                  <Input
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={setPassword}
-                    placeholder="••••••••"
-                  />
-                  <Button type="submit" loading={loading} className="w-full mt-1">
-                    Sign in & join team →
-                  </Button>
-                </form>
-              )}
-            </>
+          {error && (
+            <p className="mb-4 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
           )}
+
+          <form onSubmit={handleSignUp} className="space-y-3">
+            <Input label="Name" value={name} onChange={setName} placeholder="Ada Lovelace" />
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="ada@example.com"
+            />
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              placeholder="••••••••"
+            />
+            <Button type="submit" loading={loading} className="w-full mt-2">
+              Create account & join team →
+            </Button>
+          </form>
         </Card>
       </div>
     </main>
