@@ -17,13 +17,12 @@ import {
   type CheckoutMode,
 } from "@/lib/checkout";
 
-const ORDER: BillingModel[] = ["one_time", "subscription", "usage_based"];
+const ORDER: BillingModel[] = ["one_time", "subscription", "usage_based", "seat_based"];
 const customShelf = [...SHELF]
   .filter((item) => ORDER.includes(item.product.group))
   .sort((a, b) => ORDER.indexOf(a.product.group) - ORDER.indexOf(b.product.group));
 
 // The seat-based card is shown separately with its own stepper.
-const seatShelf = SHELF.filter((item) => item.product.group === "seat_based");
 
 export default function PricingPage() {
   const [globalCycle, setGlobalCycle] = useState<"monthly" | "yearly">("monthly");
@@ -47,6 +46,11 @@ export default function PricingPage() {
   async function handleBuy(product: Product, tier: PriceTier) {
     setError(null);
     const cycle = globalCycle;
+
+    if (product.group === "seat_based") {
+      await handleBuySeats();
+      return;
+    }
 
     if (!identity) {
       openAuthModal({
@@ -183,10 +187,12 @@ export default function PricingPage() {
         onCycleChange={handleCycleChange}
         onBuy={handleBuy}
         onCloseInlineCheckout={closeInlineCheckout}
+        seatQty={seatQty}
+        onSeatQtyChange={setSeatQty}
       />
 
       {/* Seat-based section with quantity stepper + inline checkout support */}
-      {seatShelf.length > 0 && (
+      {false && (
         <section className="mt-16">
           <div className="mb-6">
             <span className="inline-block rounded-full bg-lavender-100 px-3 py-1 text-xs font-semibold text-lavender-700">

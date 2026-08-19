@@ -236,7 +236,6 @@ export const CATALOG: Product[] = [
           "20 plan credits / seat / month",
           "Unique invite link per seat",
           "Remove members anytime",
-          "Credits refresh each billing cycle",
         ],
         art: { from: "#f7f6fe", to: "#a488e6", accent: "#0c0f0c", motif: "grid", seed: "seat" },
       },

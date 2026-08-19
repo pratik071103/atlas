@@ -51,7 +51,7 @@ const ORB_SHAPE: Record<BillingModel, { radius: string; rotate: string; rotateEx
 };
 
 function isCycleSensitive(group: BillingModel) {
-  return group === "subscription" || group === "seat_based";
+  return group === "subscription";
 }
 
 function unitSuffix(group: BillingModel, cycle: "monthly" | "yearly") {

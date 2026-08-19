@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Minus, Plus, X } from "lucide-react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import {
   formatPrice,
@@ -16,7 +16,7 @@ import {
 // ---------------------------------------------------------------------------
 
 function isCycleSensitive(group: BillingModel) {
-  return group === "subscription" || group === "seat_based";
+  return group === "subscription";
 }
 
 function unitSuffix(group: BillingModel, cycle: "monthly" | "yearly") {
@@ -125,6 +125,8 @@ interface CardProps {
   // Receives the cycle state from the parent so inline checkout mode still
   // can read the selected cycle; each card owns its own local toggle too.
   onCycleChange: (cycle: "monthly" | "yearly") => void;
+  seatQty?: number;
+  onSeatQtyChange?: (qty: number) => void;
 }
 
 function PricingCard41({
@@ -139,6 +141,8 @@ function PricingCard41({
   onToggleSnippet,
   onCloseInlineCheckout,
   onCycleChange,
+  seatQty,
+  onSeatQtyChange,
 }: CardProps) {
   const reduceMotion = useReducedMotion();
   const cycleSensitive = isCycleSensitive(product.group);
@@ -196,7 +200,16 @@ function PricingCard41({
             <span className="inline-block rounded-full border border-ink-100 px-2.5 py-0.5 text-[11px] font-medium text-ink-600">
               {GROUP_META[product.group].label}
             </span>
-            <h3 className="mt-3 text-base font-bold text-ink-900">{product.name}</h3>
+            <div className="mt-3 flex items-center gap-3">
+              <h3 className="mr-5 text-base font-bold text-ink-900">{product.name}</h3>
+              {product.group === "seat_based" && seatQty !== undefined && onSeatQtyChange && (
+                <div className="ml-auto flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                  <button type="button" onClick={() => onSeatQtyChange(Math.max(1, seatQty - 1))} disabled={inlineOpen} className="grid h-7 w-7 place-items-center rounded-full border border-ink-200 disabled:opacity-40"><Minus size={12} /></button>
+                  <span className="w-5 text-center text-sm font-bold text-ink-900">{seatQty}</span>
+                  <button type="button" onClick={() => onSeatQtyChange(Math.min(50, seatQty + 1))} disabled={inlineOpen} className="grid h-7 w-7 place-items-center rounded-full border border-ink-200 disabled:opacity-40"><Plus size={12} /></button>
+                </div>
+              )}
+            </div>
             <p className="mt-0.5 text-xs text-ink-500">{tier.label}</p>
           </div>
           {tier.highlighted && (
@@ -355,6 +368,8 @@ interface Pricing41Props {
   onCycleChange: (tierId: string, cycle: "monthly" | "yearly") => void;
   onBuy: (product: Product, tier: PriceTier) => void;
   onCloseInlineCheckout: () => void;
+  seatQty: number;
+  onSeatQtyChange: (qty: number) => void;
 }
 
 import useEmblaCarousel from "embla-carousel-react";
@@ -369,6 +384,8 @@ export function Pricing41({
   onCycleChange,
   onBuy,
   onCloseInlineCheckout,
+  seatQty,
+  onSeatQtyChange,
 }: Pricing41Props) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { align: "start", loop: false },
@@ -440,6 +457,8 @@ export function Pricing41({
                     }
                     onCloseInlineCheckout={onCloseInlineCheckout}
                     onCycleChange={(c) => onCycleChange(tier.id, c)}
+                    seatQty={product.group === "seat_based" ? seatQty : undefined}
+                    onSeatQtyChange={product.group === "seat_based" ? onSeatQtyChange : undefined}
                   />
                 </motion.div>
               );
