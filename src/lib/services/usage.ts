@@ -10,6 +10,7 @@ import {
   type UsageEventDoc,
 } from "@/lib/db";
 import { spendCreditsWithin, type WalletBalance } from "./wallet";
+import { debitDodoCredits, SIMULATE_PAYMENTS } from "@/lib/dodo";
 
 // ---------------------------------------------------------------------------
 // Playground usage events.
@@ -69,7 +70,8 @@ export interface PlaygroundResult {
 export async function runPlaygroundAction(
   userId: string,
   action: PlaygroundAction,
-  currentWallet: WalletBalance
+  currentWallet: WalletBalance,
+  dodoCustomerId?: string | null
 ): Promise<PlaygroundResult> {
   const c = await getCollections();
 
@@ -78,6 +80,10 @@ export async function runPlaygroundAction(
     let bucket: CreditBucket | null = null;
 
     if (action.credits > 0) {
+      if (!SIMULATE_PAYMENTS) {
+        if (!dodoCustomerId) throw new Error("No Dodo customer is linked to this account.");
+        await debitDodoCredits(dodoCustomerId, action.credits, action.label, `usage:${userId}:${newId("spend")}`);
+      }
       const spend = await spendCreditsWithin(session, userId, action.credits, action.label);
       wallet = { plan: spend.plan, topup: spend.topup, total: spend.total };
       // Report the bucket the credits actually came out of. A spend that
@@ -93,8 +99,8 @@ export async function runPlaygroundAction(
       label: action.label,
       credits: action.credits,
       bucket,
-      ingestStatus: "pending",
-      ingestMessage: null,
+      ingestStatus: action.id === "api-call" ? "pending" : "not_applicable",
+      ingestMessage: action.id === "api-call" ? null : "Credit-based action; not sent to Dodo.",
       createdAt: new Date(),
     };
     await c.usageEvents.insertOne(doc, session ? { session } : {});

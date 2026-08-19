@@ -66,7 +66,7 @@ export interface CheckoutStatus {
   simulated: boolean;
 }
 
-export type IngestStatus = "pending" | "ok" | "simulated" | "failed";
+export type IngestStatus = "pending" | "ok" | "simulated" | "failed" | "not_applicable";
 
 export interface UsageEvent {
   id: string;

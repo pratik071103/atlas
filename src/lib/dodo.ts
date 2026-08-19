@@ -23,6 +23,33 @@ const DODO_MODE = (process.env.DODO_MODE as "test_mode" | "live_mode") ?? "test_
 export const SIMULATE_PAYMENTS =
   process.env.SIMULATE_PAYMENTS === "1" || !process.env.DODO_API_KEY;
 
+/** Resolves the credit entitlement attached to the current Dodo customer. */
+export async function getCustomerCreditEntitlement(customerId: string) {
+  const configured = process.env.DODO_CREDIT_ENTITLEMENT_ID;
+  if (configured) return configured;
+
+  const result = await getDodoClient().customers.listCreditEntitlements(customerId);
+  const entitlement = result.items?.[0];
+  if (!entitlement) throw new Error("No Dodo credit entitlement is attached to this customer.");
+  return entitlement.credit_entitlement_id;
+}
+
+export async function debitDodoCredits(
+  customerId: string,
+  amount: number,
+  reason: string,
+  idempotencyKey: string
+) {
+  const creditEntitlementId = await getCustomerCreditEntitlement(customerId);
+  return getDodoClient().creditEntitlements.balances.createLedgerEntry(customerId, {
+    credit_entitlement_id: creditEntitlementId,
+    amount: String(amount),
+    entry_type: "debit",
+    reason,
+    idempotency_key: idempotencyKey,
+  });
+}
+
 let client: DodoPayments | null = null;
 
 export function getDodoClient(): DodoPayments {

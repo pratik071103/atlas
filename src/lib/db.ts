@@ -153,7 +153,7 @@ export interface LedgerDoc {
  *   simulated  — no API key configured, so nothing was sent
  *   failed     — Dodo rejected it (the credit spend still stands)
  */
-export type IngestStatus = "pending" | "ok" | "simulated" | "failed";
+export type IngestStatus = "pending" | "ok" | "simulated" | "failed" | "not_applicable";
 
 /** Local mirror of a playground event, plus how its Dodo ingest went. */
 export interface UsageEventDoc {

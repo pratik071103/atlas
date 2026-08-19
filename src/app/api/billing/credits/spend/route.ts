@@ -3,6 +3,7 @@ import { findPlaygroundAction } from "@shared/playground";
 import { fail, readJson, withIdentity } from "@/lib/http";
 import { runPlaygroundAction } from "@/lib/services/usage";
 import { getWallet } from "@/lib/services/wallet";
+import { listPurchases } from "@/lib/services/purchases";
 
 // POST /api/billing/credits/spend
 //
@@ -18,8 +19,16 @@ export async function POST(request: Request) {
     const action = findPlaygroundAction(String(actionId));
     if (!action) return fail("Unknown playground action.", 400);
 
+    if (action.id === "api-call") {
+      const purchases = await listPurchases(identity.userId);
+      const usageActive = purchases.some(
+        (p) => p.billingModel === "usage_based" && (p.status === "active" || p.status === "scheduled_cancel")
+      );
+      if (!usageActive) return fail("Buy the usage-based plan to enable API calls.", 403);
+    }
+
     const wallet = await getWallet(identity.userId);
-    const result = await runPlaygroundAction(identity.userId, action, wallet);
+    const result = await runPlaygroundAction(identity.userId, action, wallet, identity.dodoCustomerId);
 
     return NextResponse.json(result, { status: 201 });
   });

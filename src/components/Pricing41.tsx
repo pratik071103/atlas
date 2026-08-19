@@ -25,7 +25,7 @@ function unitSuffix(group: BillingModel, cycle: "monthly" | "yearly") {
     case "on_demand":
       return "one-time";
     case "usage_based":
-      return "/ image";
+      return "/ API call";
     case "seat_based":
       return cycle === "yearly" ? "/ seat / mo" : "/ seat / mo";
     case "subscription":

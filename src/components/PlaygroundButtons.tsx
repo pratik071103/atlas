@@ -36,11 +36,12 @@ interface Props {
   wallet: WalletBalance;
   /** True when the server has no Dodo key — the ingest call would 4xx. */
   simulated: boolean;
+  usageEnabled: boolean;
   onWalletChange: (wallet: WalletBalance) => void;
   onEvent: (event: UsageEvent) => void;
 }
 
-export function PlaygroundButtons({ wallet, simulated, onWalletChange, onEvent }: Props) {
+export function PlaygroundButtons({ wallet, simulated, usageEnabled, onWalletChange, onEvent }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,8 +53,13 @@ export function PlaygroundButtons({ wallet, simulated, onWalletChange, onEvent }
       onWalletChange(next);
       onEvent(event);
 
-      const settled = await ingest(event.id, eventName);
-      onEvent(settled);
+      // Image and HD actions are prepaid-credit operations. Only the metered
+      // API action should be reported to Dodo; the local ledger already
+      // accounts for the credit spend above.
+      if (actionId === "api-call") {
+        const settled = await ingest(event.id, eventName);
+        onEvent(settled);
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -107,11 +113,12 @@ export function PlaygroundButtons({ wallet, simulated, onWalletChange, onEvent }
         {PLAYGROUND_ACTIONS.map((action) => {
           const Icon = ICONS[action.icon];
           const unaffordable = action.credits > wallet.total;
+          const usageLocked = action.id === "api-call" && !usageEnabled;
           return (
             <button
               key={action.id}
               type="button"
-              disabled={busyId !== null || unaffordable}
+              disabled={busyId !== null || unaffordable || usageLocked}
               onClick={() => void run(action.id, action.eventName)}
               className="group flex flex-col gap-1.5 rounded-xl border border-ink-100 p-3 text-left transition-all hover:border-ink-800 hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40"
             >
@@ -127,7 +134,7 @@ export function PlaygroundButtons({ wallet, simulated, onWalletChange, onEvent }
                 {busyId === action.id ? "Working…" : action.label}
               </span>
               <span className="text-xs leading-snug text-ink-400">
-                {unaffordable ? "Not enough credits" : action.description}
+                {usageLocked ? "Buy the usage-based plan to enable API calls" : unaffordable ? "Not enough credits" : action.description}
               </span>
             </button>
           );

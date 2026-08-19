@@ -19,11 +19,12 @@ import { Card } from "./ui/Card";
 // actually recorded for this customer rather than what we think we sent.
 // ---------------------------------------------------------------------------
 
-const INGEST_TONE: Record<IngestStatus, "lime" | "ink" | "red" | "amber"> = {
+const INGEST_TONE: Record<IngestStatus, "lime" | "ink" | "red" | "amber" | "lavender"> = {
   ok: "lime",
   simulated: "ink",
   failed: "red",
   pending: "amber",
+  not_applicable: "lavender",
 };
 
 const INGEST_LABEL: Record<IngestStatus, string> = {
@@ -31,6 +32,7 @@ const INGEST_LABEL: Record<IngestStatus, string> = {
   simulated: "simulated",
   failed: "ingest failed",
   pending: "sending…",
+  not_applicable: "not metered",
 };
 
 interface Meter {

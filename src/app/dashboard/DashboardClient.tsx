@@ -179,6 +179,9 @@ export function DashboardClient() {
         (p.billingModel === "subscription" || p.billingModel === "seat_based") &&
         (p.status === "active" || p.status === "scheduled_cancel")
     ) ?? null;
+  const usageEnabled = purchases.some(
+    (p) => p.billingModel === "usage_based" && (p.status === "active" || p.status === "scheduled_cancel")
+  );
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
@@ -264,6 +267,7 @@ export function DashboardClient() {
           <PlaygroundButtons
             wallet={wallet}
             simulated={data?.simulated ?? true}
+            usageEnabled={usageEnabled}
             onWalletChange={applyWallet}
             onEvent={applyEvent}
           />

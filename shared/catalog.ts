@@ -204,7 +204,7 @@ export const CATALOG: Product[] = [
         monthly: 0.4,
         yearly: 0.4,
         dodoProductId: "pdt_0NlXH5mD4LhsoRLPH2y7f",
-        description: "$0.40 per image, billed at the end of the cycle.",
+        description: "$0.40 per API call, billed at the end of the cycle.",
         features: [
           "No minimum spend",
           "Usage ingested to Dodo automatically",
