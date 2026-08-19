@@ -36,6 +36,7 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<CheckoutTheme>("light");
   const [savingName, setSavingName] = useState(false);
+  const [deactivatingLicense, setDeactivatingLicense] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,6 +102,21 @@ export default function ProfilePage() {
     } catch (e) {
       setTheme(previous);
       setError((e as Error).message);
+    }
+  }
+
+  async function deactivateProfileLicense(license: License) {
+    setDeactivatingLicense(license.id);
+    setError(null);
+    setNotice(null);
+    try {
+      await api.deactivateLicense(license.key);
+      setNotice("License instance deactivated.");
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDeactivatingLicense(null);
     }
   }
 
@@ -318,8 +334,25 @@ export default function ProfilePage() {
                       {l.productName}
                       {l.simulated && " · simulated"}
                     </p>
+                    {l.instanceId && (
+                      <p className="mt-1 text-[11px] text-ink-500">
+                        {l.instanceName ?? "Instance"}: <code>{l.instanceId}</code>
+                      </p>
+                    )}
                   </div>
-                  <Badge tone={l.status === "active" ? "lime" : "ink"}>{l.status}</Badge>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge tone={l.status === "active" ? "lime" : "ink"}>{l.status}</Badge>
+                    {l.status === "active" && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        loading={deactivatingLicense === l.id}
+                        onClick={() => void deactivateProfileLicense(l)}
+                      >
+                        Deactivate
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

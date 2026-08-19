@@ -139,7 +139,7 @@ export async function recordIssuedLicense(
  * that has no local row creates one.
  */
 export async function activateLicense(userId: string, rawKey: string): Promise<LicenseView> {
-  const key = rawKey.trim().toUpperCase();
+  const key = rawKey.trim();
   if (!key) throw new LicenseError("Paste a license key first.", 400);
 
   const c = await getCollections();
@@ -174,8 +174,9 @@ export async function activateLicense(userId: string, rawKey: string): Promise<L
       instanceName = result.name ?? INSTANCE_NAME;
     } catch (err) {
       console.error("[licenses] activation failed:", err);
+      const detail = err instanceof Error ? err.message : "Unknown Dodo error.";
       throw new LicenseError(
-        "Dodo rejected that license key. Check it hasn't expired or used all its activations.",
+        `Dodo rejected the license key: ${detail}`,
         400
       );
     }
@@ -217,7 +218,7 @@ export interface ValidationResult {
  * doing anything: a revoked or expired key stops validating.
  */
 export async function validateLicense(userId: string, rawKey: string): Promise<ValidationResult> {
-  const key = rawKey.trim().toUpperCase();
+  const key = rawKey.trim();
   const c = await getCollections();
   const existing = await c.licenses.findOne({ key, userId });
 
@@ -267,7 +268,7 @@ export async function validateLicense(userId: string, rawKey: string): Promise<V
 
 /** Releases the activation, freeing the seat and re-blurring the gallery. */
 export async function deactivateLicense(userId: string, rawKey: string): Promise<LicenseView> {
-  const key = rawKey.trim().toUpperCase();
+  const key = rawKey.trim();
   const c = await getCollections();
   const existing = await c.licenses.findOne({ key, userId });
   if (!existing) throw new LicenseError("That key isn't on this account.", 404);

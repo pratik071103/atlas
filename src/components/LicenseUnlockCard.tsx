@@ -132,7 +132,7 @@ export function LicenseUnlockCard({ licenses, unlocked, onChange }: Props) {
         <form onSubmit={submit} className="mt-4 space-y-2.5">
           <Input
             value={key}
-            onChange={(v) => setKey(v.toUpperCase())}
+              onChange={setKey}
             placeholder="XXXX-XXXX-XXXX-XXXX"
             className="font-mono uppercase tracking-wider"
             aria-label="License key"
