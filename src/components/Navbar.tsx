@@ -8,6 +8,7 @@ import { useSession } from "./SessionProvider";
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
 import { Skeleton } from "./ui/Skeleton";
+import { TeamSwitcher } from "./TeamSwitcher";
 
 const PUBLIC_LINKS = [
   { href: "/pricing", label: "Pricing" },
@@ -16,6 +17,7 @@ const PUBLIC_LINKS = [
 
 const SIGNED_IN_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/team", label: "Team" },
   { href: "/profile", label: "Profile" },
 ];
 
@@ -69,6 +71,7 @@ export function Navbar() {
             <Skeleton className="h-10 w-36 rounded-full" />
           ) : identity ? (
             <>
+              <TeamSwitcher />
               <span className="hidden sm:inline text-sm text-ink-600">
                 {identity.name?.split(" ")[0] ?? "Guest"}
                 {identity.kind === "guest" && (

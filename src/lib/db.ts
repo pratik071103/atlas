@@ -187,6 +187,46 @@ export interface LicenseDoc {
   createdAt: Date;
 }
 
+// ---------------------------------------------------------------------------
+// Team / seat-based billing
+// ---------------------------------------------------------------------------
+
+export type TeamStatus = "active" | "cancelled";
+export type TeamMemberStatus = "invited" | "active" | "removed";
+
+/**
+ * One team per seat-based purchase. The owner buys N add-on seats; this row
+ * is created by the webhook handler when the subscription activates.
+ */
+export interface TeamDoc {
+  _id: string;                     // "team_..."
+  ownerId: string;                 // Better Auth userId of the seat buyer
+  name: string;                    // e.g. "Ada's Workspace"
+  purchaseId: string;              // links to the seat_based purchase row
+  dodoSubscriptionId: string | null;
+  seatCount: number;               // total add-on quantity currently purchased
+  status: TeamStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * One row per invite slot. Each slot is single-use: when an invitee accepts,
+ * userId is filled in, status moves to "active", and the token can no longer
+ * be redeemed. Purchasing more seats appends new slots; removing a member
+ * marks the slot "removed" and zeros the member's plan wallet.
+ */
+export interface TeamMemberDoc {
+  _id: string;                     // "mbr_..."
+  teamId: string;
+  ownerId: string;                 // denormalized for reverse-lookup queries
+  userId: string | null;           // null until the invitee accepts
+  inviteToken: string;             // random hex; uniquely indexed
+  status: TeamMemberStatus;
+  joinedAt: Date | null;
+  createdAt: Date;
+}
+
 export interface WebhookEventDoc {
   _id: string;
   /** Dodo's delivery id — uniquely indexed, which is what dedupes replays. */
@@ -204,6 +244,8 @@ export interface Collections {
   usageEvents: Collection<UsageEventDoc>;
   licenses: Collection<LicenseDoc>;
   webhookEvents: Collection<WebhookEventDoc>;
+  teams: Collection<TeamDoc>;
+  teamMembers: Collection<TeamMemberDoc>;
 }
 
 const collections: Collections = {
@@ -213,6 +255,8 @@ const collections: Collections = {
   usageEvents: mongoDb.collection<UsageEventDoc>("usageEvents"),
   licenses: mongoDb.collection<LicenseDoc>("licenses"),
   webhookEvents: mongoDb.collection<WebhookEventDoc>("webhookEvents"),
+  teams: mongoDb.collection<TeamDoc>("teams"),
+  teamMembers: mongoDb.collection<TeamMemberDoc>("teamMembers"),
 };
 
 // ---------------------------------------------------------------------------
@@ -247,6 +291,16 @@ async function bootstrapIndexes(): Promise<void> {
     // Replay dedupe: Dodo re-delivers, the second audit insert is rejected.
     collections.webhookEvents.createIndex({ eventId: 1 }, { unique: true, sparse: true }),
     collections.webhookEvents.createIndex({ createdAt: -1 }),
+
+    // Teams
+    collections.teams.createIndex({ ownerId: 1 }),
+    collections.teams.createIndex({ dodoSubscriptionId: 1 }, { sparse: true }),
+
+    // Team members — inviteToken is the redemption key; must be unique.
+    collections.teamMembers.createIndex({ teamId: 1 }),
+    collections.teamMembers.createIndex({ inviteToken: 1 }, { unique: true }),
+    collections.teamMembers.createIndex({ userId: 1 }, { sparse: true }),
+    collections.teamMembers.createIndex({ ownerId: 1 }),
   ]);
 }
 

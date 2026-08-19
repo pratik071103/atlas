@@ -80,6 +80,11 @@ async function syncPlanAllowanceWithin(
       {
         userId,
         creditBucket: "plan",
+        // Exclude seat_based purchases: the 20-credit allowance per seat is
+        // seeded directly into each member's wallet via acceptInvite /
+        // refreshMemberCredits. Including them here would incorrectly inflate
+        // the owner's own balance on every renewal.
+        billingModel: { $ne: "seat_based" },
         status: { $in: ["active", "scheduled_cancel"] },
       },
       session ? { session } : {}
@@ -112,9 +117,22 @@ export async function activatePurchase(purchaseId: string, reason: string): Prom
     );
 
     if (purchase.creditsGranted > 0) {
-      if (purchase.creditBucket === "plan") {
-        // Recomputed from every active plan purchase, this one included.
+      if (purchase.creditBucket === "plan" && purchase.billingModel !== "seat_based") {
+        // Regular subscription: recompute from every active plan purchase.
         await syncPlanAllowanceWithin(session, purchase.userId, reason, `activate:${purchaseId}`);
+      } else if (purchase.billingModel === "seat_based") {
+        // Seat-based: grant the owner their personal seat credits directly.
+        // This is seatCount × 20 (stored in creditsGranted at checkout time).
+        // We do NOT go through the plan sum because seat_based is excluded from
+        // that query to prevent future renewals from inflating the owner's balance.
+        await grantCreditsWithin(
+          session,
+          purchase.userId,
+          "plan",
+          purchase.creditsGranted,
+          reason,
+          `activate:${purchaseId}`
+        );
       } else {
         await grantCreditsWithin(
           session,

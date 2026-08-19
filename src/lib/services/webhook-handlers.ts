@@ -174,7 +174,29 @@ export const webhookHandlers = {
   // ---- Subscription lifecycle ---------------------------------------------
   onSubscriptionActive: async (payload: WebhookPayload) => {
     const p = await resolve("subscription.active", payload);
-    if (p) await activatePurchase(p._id, `Subscription active: ${p.productName}`);
+    if (!p) return;
+    await activatePurchase(p._id, `Subscription active: ${p.productName}`);
+
+    // Seat-based: create the team workspace and generate N invite link slots.
+    if (p.billingModel === "seat_based") {
+      const { createTeam, generateInviteLinks, getTeamByOwner } = await import("./teams");
+      const existing = await getTeamByOwner(p.userId);
+      if (!existing) {
+        const seatCount = Number(
+          (payload.data?.metadata as Record<string, unknown> | undefined)?.seatCount ?? 1
+        );
+        const subId =
+          typeof payload.data?.subscription_id === "string" ? payload.data.subscription_id : null;
+        const team = await createTeam({
+          ownerId: p.userId,
+          purchaseId: p._id,
+          dodoSubscriptionId: subId,
+          seatCount,
+          name: "My Workspace",
+        });
+        await generateInviteLinks(team._id, p.userId, seatCount);
+      }
+    }
   },
 
   onSubscriptionRenewed: async (payload: WebhookPayload) => {
@@ -184,12 +206,24 @@ export const webhookHandlers = {
     await setPurchaseStatus(p._id, "active");
     if (p.creditsGranted <= 0) return;
 
-    // The period end makes the key unique per cycle, so a re-delivered renewal
-    // does not hand out a second month's credits.
     const periodEnd = String(payload.data?.next_billing_date ?? payload.timestamp ?? "");
     const key = `renew:${p.dodoSubscriptionId ?? p._id}:${periodEnd}`;
 
-    if (p.creditBucket === "plan") {
+    if (p.billingModel === "seat_based") {
+      // Owner renewal: grant their total credits directly (excluded from plan-sum).
+      await grantCredits(p.userId, "plan", p.creditsGranted, `Renewal: ${p.productName}`, key);
+
+      // Also refresh every active member's wallet to 20 credits (one seat each).
+      const { getTeamByOwner, refreshMemberCredits } = await import("./teams");
+      const team = await getTeamByOwner(p.userId);
+      if (team) {
+        // creditsGranted = seatCount × 20, so per-seat = creditsGranted / seatCount.
+        const creditsPerSeat = team.seatCount > 0
+          ? Math.round(p.creditsGranted / team.seatCount)
+          : 20;
+        await refreshMemberCredits(team._id, creditsPerSeat, `${key}:members`);
+      }
+    } else if (p.creditBucket === "plan") {
       await refreshPlanAllowance(p.userId, `Renewal: ${p.productName}`, key);
     } else {
       await grantCredits(p.userId, "topup", p.creditsGranted, `Renewal: ${p.productName}`, key);
@@ -227,6 +261,19 @@ export const webhookHandlers = {
     });
     await setPurchaseStatus(p._id, "active");
     await refreshPlanAllowance(p.userId, `Plan changed: ${product.name} — ${tier.label}`);
+
+    // Seat-based: sync seat count, append extra invite links if seats increased.
+    if (p.billingModel === "seat_based") {
+      const addonItems = payload.data?.addons as Array<{ addon_id: string; quantity: number }> | undefined;
+      const newQty = addonItems?.reduce((sum, a) => sum + (a.quantity ?? 0), 0) ?? 1;
+      const { getTeamByOwner, updateSeatCount, generateInviteLinks } = await import("./teams");
+      const team = await getTeamByOwner(p.userId);
+      if (team) {
+        const delta = newQty - team.seatCount;
+        await updateSeatCount(team._id, newQty);
+        if (delta > 0) await generateInviteLinks(team._id, p.userId, delta);
+      }
+    }
   },
 
   onSubscriptionCancelled: async (payload: WebhookPayload) => {
@@ -234,6 +281,13 @@ export const webhookHandlers = {
     if (!p) return;
     await setPurchaseStatus(p._id, "cancelled");
     await reverseCredits(p, `Cancelled: ${p.productName}`);
+
+    // Seat-based: cancel the team and zero every member's wallet.
+    if (p.billingModel === "seat_based") {
+      const { getTeamByOwner, cancelTeam } = await import("./teams");
+      const team = await getTeamByOwner(p.userId);
+      if (team) await cancelTeam(team._id);
+    }
   },
 
   onSubscriptionExpired: async (payload: WebhookPayload) => {

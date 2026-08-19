@@ -34,6 +34,8 @@ interface Body {
   tierId?: string;
   billingCycle?: "monthly" | "yearly";
   mode?: "redirect" | "overlay" | "inline";
+  /** Number of seats for seat-based products (ignored for other billing models). */
+  quantity?: number;
 }
 
 const MODES = ["redirect", "overlay", "inline"] as const;
@@ -56,6 +58,10 @@ export async function POST(request: Request) {
     const purchaseId = newId("pur");
     const productName = `${product.name} — ${tier.label}`;
 
+    // Seat-based: quantity is the number of seats (add-on units).
+    const seatQty =
+      product.group === "seat_based" ? Math.max(1, Math.floor(Number(body.quantity) || 1)) : 1;
+
     const base = {
       id: purchaseId,
       userId: identity.userId,
@@ -65,24 +71,36 @@ export async function POST(request: Request) {
       billingModel: product.group,
       billingCycle,
       checkoutMode: mode,
-      amount,
-      creditsGranted: tier.credits ?? 0,
+      amount: amount * seatQty,
+      // For seat_based: creditsGranted stores the TOTAL credits across all seats
+      // (seatQty × 20). This is what the owner gets in their own wallet as their
+      // personal allowance. Members get their own 20-credit wallets separately.
+      creditsGranted: product.group === "seat_based"
+        ? (tier.credits ?? 0) * seatQty
+        : (tier.credits ?? 0),
       creditBucket: creditBucketFor(product.group),
       dodoProductId: tier.dodoProductId,
     };
 
     // ---- Simulated mode ----------------------------------------------------
-    // Local development without a Dodo account: instant success, so the rest of
-    // the app (dashboard, wallet, studio) still works offline. The purchase is
-    // inserted pending and then activated through the same transactional path
-    // the webhook uses, so simulated and real purchases cannot drift apart.
     if (SIMULATE_PAYMENTS) {
       await createPurchase({ ...base, simulated: true });
       await activatePurchase(purchaseId, `Purchase: ${productName}`);
 
-      // Live, Dodo mints the key and delivers it on license_key.created.
-      // Offline there is nothing to do that, so the pass issues its own.
       if (product.grantsLicense) await issueSimulatedLicense(identity.userId);
+
+      // Seat-based: create team + invite links immediately (no webhook in sim mode).
+      if (product.group === "seat_based") {
+        const { createTeam, generateInviteLinks } = await import("@/lib/services/teams");
+        const team = await createTeam({
+          ownerId: identity.userId,
+          purchaseId,
+          dodoSubscriptionId: null,
+          seatCount: seatQty,
+          name: `${identity.name ? identity.name + "'s" : "My"} Workspace`,
+        });
+        await generateInviteLinks(team._id, identity.userId, seatQty);
+      }
 
       return NextResponse.json(
         { purchaseId, simulated: true, checkoutUrl: null, sessionId: null },
@@ -99,9 +117,16 @@ export async function POST(request: Request) {
     let session;
     try {
       session = await getDodoClient().checkoutSessions.create({
-        // Dodo requires a positive cart quantity even for mandate-only
-        // on-demand checkouts. `mandate_only` prevents an upfront charge.
-        product_cart: [{ product_id: tier.dodoProductId, quantity: 1 }],
+        product_cart: [
+          {
+            product_id: tier.dodoProductId,
+            quantity: 1,
+            // Seat-based: attach the per-seat add-on at the requested quantity.
+            ...(product.group === "seat_based" && tier.addonId
+              ? { addons: [{ addon_id: tier.addonId, quantity: seatQty }] }
+              : {}),
+          },
+        ],
         // Prefer the Dodo customer Better Auth linked at sign-up so repeat
         // purchases attach to one customer record and show up in that
         // customer's portal. Anonymous guests have none yet — let Dodo collect
@@ -114,7 +139,9 @@ export async function POST(request: Request) {
         billing_currency: "USD",
         return_url: `${appUrl()}/dashboard?checkout=${purchaseId}`,
         cancel_url: `${appUrl()}/pricing`,
-        metadata: { purchaseId },
+        // seatCount in metadata so the subscription.active webhook knows how
+        // many invite-link slots to create.
+        metadata: { purchaseId, seatCount: String(seatQty) },
         // Brand colours in both palettes, so the customer's profile preference
         // (light / dark / follow the device) still looks like Atlas.
         customization: {

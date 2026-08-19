@@ -103,6 +103,41 @@ export interface WebhookEventRow {
   payload: string;
 }
 
+// ---------------------------------------------------------------------------
+// Team / seat-based billing
+// ---------------------------------------------------------------------------
+
+export interface TeamMemberRow {
+  id: string;
+  userId: string | null;
+  inviteToken: string;
+  inviteUrl: string;
+  status: "invited" | "active" | "removed";
+  joinedAt: string | null;
+  createdAt: string;
+}
+
+export interface TeamRow {
+  id: string;
+  ownerId: string;
+  name: string;
+  seatCount: number;
+  status: string;
+  dodoSubscriptionId: string | null;
+  createdAt: string;
+}
+
+export interface TeamSnapshot {
+  team: TeamRow;
+  members: TeamMemberRow[] | null;
+  isOwner: boolean;
+}
+
+export interface TeamsResponse {
+  owned: TeamSnapshot | null;
+  memberOf: TeamSnapshot | null;
+}
+
 export interface BillingSnapshot {
   /** True when the server has no Dodo API key, so nothing reaches the network. */
   simulated: boolean;
@@ -189,5 +224,33 @@ export const api = {
     request<{ license: License }>("/license/deactivate", {
       method: "POST",
       body: JSON.stringify({ key }),
+    }),
+
+  // ---- Team / seat-based billing ------------------------------------------
+
+  getTeam: () => request<TeamsResponse>("/teams"),
+
+  acceptInvite: (token: string) =>
+    request<{ team: TeamRow; members: TeamMemberRow[] }>("/teams/invite/accept", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
+
+  removeMember: (memberId: string) =>
+    request<{ ok: boolean }>(`/teams/members/${memberId}`, { method: "DELETE" }),
+
+  createSeatsCheckout: (
+    quantity: number,
+    mode: "redirect" | "overlay" | "inline" = "overlay"
+  ) =>
+    request<CheckoutSession>("/checkout", {
+      method: "POST",
+      body: JSON.stringify({
+        productId: "team-workspace",
+        tierId: "seat-monthly",
+        quantity,
+        billingCycle: "monthly",
+        mode,
+      }),
     }),
 };

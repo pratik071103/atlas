@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, KeyRound, LogOut, Sparkles, UserPlus } from "lucide-react";
+import { ExternalLink, KeyRound, LogOut, Sparkles, UserPlus, Users } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { CreditMeter } from "@/components/CreditMeter";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { api, type BillingSnapshot, type License } from "@/lib/api";
+import { api, type BillingSnapshot, type License, type TeamRow } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
 type CheckoutTheme = "light" | "dark" | "system";
@@ -30,6 +30,8 @@ export default function ProfilePage() {
   const [billing, setBilling] = useState<BillingSnapshot | null>(null);
   const [licenses, setLicenses] = useState<License[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ownedTeam, setOwnedTeam] = useState<TeamRow | null>(null);
+  const [memberOfTeam, setMemberOfTeam] = useState<TeamRow | null>(null);
 
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<CheckoutTheme>("light");
@@ -43,10 +45,16 @@ export default function ProfilePage() {
       return;
     }
     try {
-      const [snapshot, licenseData] = await Promise.all([api.getBilling(), api.getLicenses()]);
+      const [snapshot, licenseData, teamData] = await Promise.all([
+        api.getBilling(),
+        api.getLicenses(),
+        api.getTeam().catch(() => ({ owned: null, memberOf: null })),
+      ]);
       setBilling(snapshot);
       setLicenses(licenseData.licenses);
       setName(snapshot.identity.name ?? "");
+      if (teamData.owned) setOwnedTeam(teamData.owned.team);
+      if (teamData.memberOf) setMemberOfTeam(teamData.memberOf.team);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -249,6 +257,43 @@ export default function ProfilePage() {
         <CreditMeter wallet={wallet} ledger={billing?.ledger ?? []} />
 
         <SubscriptionCard subscription={subscription} onChanged={() => void load()} />
+
+        {/* Team card */}
+        <Card className="p-5">
+          <h2 className="flex items-center gap-1.5 text-sm font-bold text-ink-900">
+            <Users size={14} /> Team workspace
+          </h2>
+          {ownedTeam ? (
+            <>
+              <p className="mt-2 text-sm text-ink-600">
+                You own <strong>{ownedTeam.name}</strong> ({ownedTeam.seatCount} seat
+                {ownedTeam.seatCount !== 1 ? "s" : ""})
+              </p>
+              <Button href="/team" variant="secondary" className="mt-4">
+                Manage team →
+              </Button>
+            </>
+          ) : memberOfTeam ? (
+            <>
+              <p className="mt-2 text-sm text-ink-600">
+                Member of <strong>{memberOfTeam.name}</strong>
+              </p>
+              <Button href="/team" variant="secondary" className="mt-4">
+                View workspace →
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-ink-600">
+                Buy seats to invite teammates. Each seat includes 20 monthly credits and a
+                unique invite link.
+              </p>
+              <Button href="/pricing" variant="secondary" className="mt-4">
+                <Users size={14} /> Add seats — $8/seat/mo
+              </Button>
+            </>
+          )}
+        </Card>
 
         <Card className="p-5">
           <h2 className="flex items-center gap-1.5 text-sm font-bold text-ink-900">

@@ -10,7 +10,28 @@
 // dashboard (test mode) for each tier. Create products with matching prices
 // and billing intervals, then paste the ids here. In simulate mode they are
 // never sent anywhere.
+//
+// Seat-based billing uses two Dodo objects:
+//   TEAM_BASE_PRODUCT_ID — the $0/month base subscription
+//   SEAT_ADDON_ID        — the $8/month per-seat add-on (attached to the base)
 // ---------------------------------------------------------------------------
+
+/**
+ * Dodo product id for the $0/month "Team Workspace" base subscription.
+ * Create it in the Dodo dashboard and set DODO_TEAM_BASE_PRODUCT_ID in .env.
+ */
+export const TEAM_BASE_PRODUCT_ID: string =
+  (typeof process !== "undefined" ? process.env?.DODO_TEAM_BASE_PRODUCT_ID : undefined) ??
+  "pdt_team_workspace";
+
+/**
+ * Dodo add-on id for the $8/month "Extra Seat" add-on.
+ * Create it in the Dodo dashboard and set DODO_SEAT_ADDON_ID in .env.
+ * Attach it to the Team Workspace base product before going live.
+ */
+export const SEAT_ADDON_ID: string =
+  (typeof process !== "undefined" ? process.env?.DODO_SEAT_ADDON_ID : undefined) ??
+  "addon_extra_seat";
 
 export type BillingModel =
   | "one_time"
@@ -53,6 +74,11 @@ export interface PriceTier {
   highlighted?: boolean;
   /** Dodo Payments product id for this tier (from the Dodo dashboard). */
   dodoProductId: string;
+  /**
+   * For seat-based tiers only: the Dodo add-on id that is attached to the
+   * base product. The checkout route sends this as the add-on when quantity > 0.
+   */
+  addonId?: string;
   art: ArtSpec;
 }
 
@@ -189,22 +215,29 @@ export const CATALOG: Product[] = [
     ],
   },
   {
-    id: "team-seats",
+    id: "team-workspace",
     group: "seat_based",
     name: "Extra Seats",
-    tagline: "Add teammates to your Atlas workspace.",
+    tagline: "Add teammates to your Atlas workspace. Each seat includes 20 monthly credits.",
     ctaLabel: "Add seats",
     tiers: [
       {
         id: "seat-monthly",
-        label: "Per Seat",
+        label: "Per Seat / Month",
         monthly: 8,
         yearly: 80,
         seats: 1,
         credits: 20,
-        dodoProductId: "pdt_0NlXH5n3AIXFj9DeGKIdv",
+        // The base product is $0 — the actual charge comes from the add-on.
+        dodoProductId: TEAM_BASE_PRODUCT_ID,
+        addonId: SEAT_ADDON_ID,
         description: "Billed per active teammate, per month.",
-        features: ["20 plan credits / seat / month", "Per-seat usage history", "Remove anytime"],
+        features: [
+          "20 plan credits / seat / month",
+          "Unique invite link per seat",
+          "Remove members anytime",
+          "Credits refresh each billing cycle",
+        ],
         art: { from: "#f7f6fe", to: "#a488e6", accent: "#0c0f0c", motif: "grid", seed: "seat" },
       },
     ],
