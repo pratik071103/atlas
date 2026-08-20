@@ -73,11 +73,10 @@ export function Navbar() {
             <>
               <TeamSwitcher />
               <span className="hidden sm:inline text-sm text-ink-600">
-                {identity.name?.split(" ")[0] ?? "Guest"}
-                {identity.kind === "guest" && (
-                  <Badge tone="ink" className="ml-2">
-                    Guest
-                  </Badge>
+                {identity.kind === "guest" ? (
+                  <Badge tone="ink">Guest</Badge>
+                ) : (
+                  identity.name?.split(" ")[0] ?? "Guest"
                 )}
               </span>
               <Button

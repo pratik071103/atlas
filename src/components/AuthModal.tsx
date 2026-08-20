@@ -197,7 +197,6 @@ export function AuthModal() {
           {tab !== "guest" && (
             <Input
               required
-              minLength={8}
               label="Password"
               type="password"
               value={password}
