@@ -36,9 +36,21 @@ import { grantCredits } from "./wallet";
  * is a Date on the typed payloads, hence the union.
  */
 export interface WebhookPayload {
+  event_type?: string;
   type?: string;
   timestamp?: string | Date;
   data?: Record<string, unknown>;
+}
+
+function eventType(payload: WebhookPayload): string {
+  return payload.event_type ?? payload.type ?? "unknown";
+}
+
+function eventData(payload: WebhookPayload): Record<string, unknown> {
+  const data = payload.data ?? {};
+  return data.object && typeof data.object === "object"
+    ? (data.object as Record<string, unknown>)
+    : data;
 }
 
 /**
@@ -52,7 +64,7 @@ export interface WebhookPayload {
  * while keeping true replays deduped.
  */
 function deliveryKey(payload: WebhookPayload): string | null {
-  const data = payload.data ?? {};
+  const data = eventData(payload);
   const subject =
     (typeof data.payment_id === "string" && data.payment_id) ||
     (typeof data.subscription_id === "string" && data.subscription_id) ||
@@ -61,12 +73,12 @@ function deliveryKey(payload: WebhookPayload): string | null {
     (typeof data.license_key_id === "string" && data.license_key_id) ||
     null;
 
-  if (!subject || !payload.type) return null;
+  if (!subject) return null;
   const at =
     payload.timestamp instanceof Date
       ? payload.timestamp.toISOString()
       : (payload.timestamp ?? "");
-  return `${payload.type}:${subject}:${at}`;
+  return `${eventType(payload)}:${subject}:${at}`;
 }
 
 async function logEvent(payload: WebhookPayload, status: string): Promise<void> {
@@ -75,7 +87,7 @@ async function logEvent(payload: WebhookPayload, status: string): Promise<void> 
     await c.webhookEvents.insertOne({
       _id: newId("evt"),
       eventId: deliveryKey(payload),
-      eventType: String(payload.type ?? "unknown"),
+      eventType: eventType(payload),
       status,
       payload,
       createdAt: new Date(),
@@ -88,7 +100,7 @@ async function logEvent(payload: WebhookPayload, status: string): Promise<void> 
 
 /** Resolves the purchase for an event, warning when nothing matches. */
 async function resolve(type: string, payload: WebhookPayload): Promise<PurchaseDoc | null> {
-  const data = payload.data ?? {};
+  const data = eventData(payload);
   const purchase = await findPurchaseForEvent(data);
 
   if (!purchase) {
@@ -147,7 +159,7 @@ export const webhookHandlers = {
   // Audit every verified event; newest is visible on /dev/webhooks.
   onPayload: async (payload: WebhookPayload) => {
     await logEvent(payload, "received");
-    console.log(`[webhook] ${payload?.type ?? "unknown"}`);
+    console.log(`[webhook] ${eventType(payload)}`);
   },
 
   // ---- Payment lifecycle --------------------------------------------------
@@ -183,10 +195,10 @@ export const webhookHandlers = {
       const existing = await getTeamByOwner(p.userId);
       if (!existing) {
         const seatCount = Number(
-          (payload.data?.metadata as Record<string, unknown> | undefined)?.seatCount ?? 1
+          (eventData(payload).metadata as Record<string, unknown> | undefined)?.seatCount ?? 1
         );
-        const subId =
-          typeof payload.data?.subscription_id === "string" ? payload.data.subscription_id : null;
+        const subscriptionId = eventData(payload).subscription_id;
+        const subId = typeof subscriptionId === "string" ? subscriptionId : null;
         const team = await createTeam({
           ownerId: p.userId,
           purchaseId: p._id,
@@ -206,7 +218,7 @@ export const webhookHandlers = {
     await setPurchaseStatus(p._id, "active");
     if (p.creditsGranted <= 0) return;
 
-    const periodEnd = String(payload.data?.next_billing_date ?? payload.timestamp ?? "");
+    const periodEnd = String(eventData(payload).next_billing_date ?? payload.timestamp ?? "");
     const key = `renew:${p.dodoSubscriptionId ?? p._id}:${periodEnd}`;
 
     if (p.billingModel === "seat_based") {
@@ -239,11 +251,11 @@ export const webhookHandlers = {
     const p = await resolve("subscription.plan_changed", payload);
     if (!p) return;
 
-    const match = tierByDodoProductId(payload.data?.product_id);
+    const match = tierByDodoProductId(eventData(payload).product_id);
     if (!match) {
       console.warn(
         `[webhook] plan_changed for purchase ${p._id} — product ${String(
-          payload.data?.product_id
+          eventData(payload).product_id
         )} is not in the catalog; leaving the tier as-is.`
       );
       return;
@@ -264,7 +276,7 @@ export const webhookHandlers = {
 
     // Seat-based: sync seat count, append extra invite links if seats increased.
     if (p.billingModel === "seat_based") {
-      const addonItems = payload.data?.addons as Array<{ addon_id: string; quantity: number }> | undefined;
+      const addonItems = eventData(payload).addons as Array<{ addon_id: string; quantity: number }> | undefined;
       const newQty = addonItems?.reduce((sum, a) => sum + (a.quantity ?? 0), 0) ?? 1;
       const { getTeamByOwner, updateSeatCount, generateInviteLinks } = await import("./teams");
       const team = await getTeamByOwner(p.userId);
@@ -343,7 +355,7 @@ export const webhookHandlers = {
    * user id.
    */
   onLicenseKeyCreated: async (payload: WebhookPayload) => {
-    const data = payload.data ?? {};
+    const data = eventData(payload);
     const key = typeof data.key === "string" ? data.key : null;
     if (!key) {
       console.warn("[webhook] license_key.created carried no key");
@@ -358,6 +370,6 @@ export const webhookHandlers = {
   },
 
   onEntitlementGrantDelivered: async (payload: WebhookPayload) => {
-    console.log(`[webhook] entitlement delivered: ${String(payload.data?.id ?? "unknown")}`);
+    console.log(`[webhook] entitlement delivered: ${String(eventData(payload).id ?? "unknown")}`);
   },
 };
