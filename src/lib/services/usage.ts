@@ -100,7 +100,11 @@ export async function runPlaygroundAction(
       credits: action.credits,
       bucket,
       ingestStatus: action.id === "api-call" ? "pending" : "not_applicable",
-      ingestMessage: action.id === "api-call" ? null : "Credit-based action; not sent to Dodo.",
+      ingestMessage: action.id === "api-call"
+        ? null
+        : SIMULATE_PAYMENTS
+          ? "Credit ledger recorded locally in simulation mode."
+          : "Credit ledger entry recorded in Dodo and Atlas.",
       createdAt: new Date(),
     };
     await c.usageEvents.insertOne(doc, session ? { session } : {});

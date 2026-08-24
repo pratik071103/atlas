@@ -32,7 +32,7 @@ const INGEST_LABEL: Record<IngestStatus, string> = {
   simulated: "simulated",
   failed: "ingest failed",
   pending: "sending…",
-  not_applicable: "not metered",
+  not_applicable: "credit ledger",
 };
 
 interface Meter {
