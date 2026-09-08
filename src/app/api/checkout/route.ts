@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       const { getTeamByOwner } = await import("@/lib/services/teams");
       const existingTeam = await getTeamByOwner(identity.userId);
       if (existingTeam) {
-        return fail("seat based billing already previously purchased", 403);
+        return fail("You already have a team workspace.", 403);
       }
     }
 
