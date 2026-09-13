@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter, Space_Grotesk } from "next/font/google";
 import { AuthModal } from "@/components/AuthModal";
-import { Navbar } from "@/components/Navbar";
+import { LayoutShell } from "@/components/LayoutShell";
 import { SessionProvider } from "@/components/SessionProvider";
+import { SidebarStateProvider } from "@/components/SidebarContext";
 import { ToastProvider } from "@/components/Toaster";
 import "./globals.css";
 
@@ -37,13 +38,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col bg-ink-50 font-body text-ink-900 antialiased" suppressHydrationWarning>
+      <body className="min-h-screen bg-ink-50 font-body text-ink-900 antialiased" suppressHydrationWarning>
         <SessionProvider>
-          <ToastProvider>
-            <Navbar />
-            <div className="flex-1 flex flex-col">{children}</div>
-            <AuthModal />
-          </ToastProvider>
+          <SidebarStateProvider>
+            <ToastProvider>
+              <LayoutShell>
+                {children}
+              </LayoutShell>
+              <AuthModal />
+            </ToastProvider>
+          </SidebarStateProvider>
         </SessionProvider>
       </body>
     </html>

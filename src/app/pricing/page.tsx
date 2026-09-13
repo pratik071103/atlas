@@ -6,6 +6,7 @@ import { SHELF, tierPrice, type BillingModel, type PriceTier, type Product } fro
 import { CheckoutModeSwitch } from "@/components/CheckoutModeSwitch";
 import { Pricing41 } from "@/components/Pricing41";
 import { useSession } from "@/components/SessionProvider";
+import { useSidebarState } from "@/components/SidebarContext";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/lib/api";
 import {
@@ -31,6 +32,7 @@ export default function PricingPage() {
   const [seatQty, setSeatQty] = useState(1);
   const [seatBuying, setSeatBuying] = useState(false);
   const { identity, openAuthModal, inlineCheckoutOpen, setInlineCheckoutOpen } = useSession();
+  const { unlockSidebar } = useSidebarState();
   const router = useRouter();
 
   function handleCycleChange(_tierId: string, cycle: "monthly" | "yearly") {
@@ -38,6 +40,8 @@ export default function PricingPage() {
   }
 
   async function handleBuy(product: Product, tier: PriceTier) {
+    // Unlock the sidebar as soon as any buy CTA is clicked.
+    unlockSidebar();
     setError(null);
     const cycle = globalCycle;
 
@@ -91,6 +95,8 @@ export default function PricingPage() {
   }
 
   async function handleBuySeats(tier: PriceTier) {
+    // Unlock the sidebar as soon as any buy CTA is clicked.
+    unlockSidebar();
     setError(null);
     if (!identity) {
       openAuthModal();

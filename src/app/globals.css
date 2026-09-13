@@ -3,6 +3,22 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* ── Sidebar geometry ─────────────────────────────────────── */
+    --sidebar-width: 240px;
+    --sidebar-width-icon: 56px;
+    /* ── Sidebar colour tokens (Atlas palette) ───────────────── */
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e9ebe8;       /* ink-100 */
+    --sidebar-fg: #464d46;           /* ink-600 */
+    --sidebar-accent: #f7f8f7;       /* ink-50  */
+    --sidebar-accent-fg: #0c0f0c;    /* ink-900 */
+    --sidebar-primary: #c3ee3f;      /* lime-400 */
+    --sidebar-primary-fg: #0c0f0c;   /* ink-900 */
+    --sidebar-ring: #8a67da;         /* lavender-500 */
+    /* ── Offset used by LayoutShell to push main content ──────── */
+    --sidebar-offset: 0px;
+  }
   html {
     font-family: theme("fontFamily.body");
   }
