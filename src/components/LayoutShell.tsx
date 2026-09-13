@@ -75,7 +75,7 @@ export function LayoutShell({ children }: { children: ReactNode }) {
       >
         {/* ── Inner content header with SidebarTrigger ─────────── */}
         {showSidebar && (
-          <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b border-ink-100 bg-white/90 px-4 backdrop-blur">
+          <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b border-ink-100 bg-brand-cream/90 px-4 backdrop-blur">
             <SidebarTrigger />
           </header>
         )}

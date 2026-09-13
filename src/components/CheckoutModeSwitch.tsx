@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalLink, PanelTop, SquareCode, Store } from "lucide-react";
+import { StorefrontButton } from "@/components/ui/StorefrontButton";
 import type { CheckoutMode } from "@/lib/checkout";
 
 const MODES: { id: CheckoutMode; label: string; icon: typeof ExternalLink; blurb: string }[] = [
@@ -40,21 +41,14 @@ export function CheckoutModeSwitch({ value, onChange }: Props) {
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
       <div className="flex items-center gap-2.5">
         {storefrontUrl && (
-          <div className="storefront-btn-wrapper">
-            <a
-              href={storefrontUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="Btn"
-              aria-label="Open Dodo storefront preview"
-            >
-              <span className="svgContainer">
-                <Store size={18} strokeWidth={2.2} />
-              </span>
-              <span className="BG" />
-            </a>
-            <span className="storefront-tooltip">storefront preview</span>
-          </div>
+          <StorefrontButton
+            href={storefrontUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            icon={Store}
+            tooltip="storefront preview"
+            ariaLabel="Open Dodo storefront preview"
+          />
         )}
 
         <div className="inline-flex shrink-0 rounded-full border border-ink-200 bg-white p-1">

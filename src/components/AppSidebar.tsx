@@ -11,7 +11,6 @@ import {
   LogOut,
   Palette,
   PanelLeft,
-  Sparkle,
   Tag,
   User,
   Users,
@@ -21,6 +20,7 @@ import { cn } from "@/lib/cn";
 import { useSidebarState } from "./SidebarContext";
 import { useSession } from "./SessionProvider";
 import { Skeleton } from "./ui/Skeleton";
+import { DotLogo } from "./ui/DotLogo";
 import { TeamSwitcher } from "./TeamSwitcher";
 
 // ---------------------------------------------------------------------------
@@ -297,9 +297,7 @@ export function AppSidebar() {
             href="/"
             className="flex shrink-0 items-center gap-2 font-display text-base font-bold text-ink-900"
           >
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lime-400 text-ink-900">
-              <Sparkle size={15} strokeWidth={2.5} />
-            </span>
+            <DotLogo className="h-8 w-8" />
             {!collapsed && (
               <motion.span
                 initial={{ opacity: 0 }}

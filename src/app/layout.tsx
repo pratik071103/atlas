@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Inter, Space_Grotesk } from "next/font/google";
+import { Anton, IBM_Plex_Mono, Inter, Space_Grotesk, Space_Mono } from "next/font/google";
 import { AuthModal } from "@/components/AuthModal";
 import { LayoutShell } from "@/components/LayoutShell";
 import { SessionProvider } from "@/components/SessionProvider";
@@ -29,6 +29,22 @@ const mono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// Heavy condensed display face — used exclusively in the Hero heading.
+const anton = Anton({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-anton",
+  display: "swap",
+});
+
+// Fixed-pitch footer labels in the hero.
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Atlas Studio — a Dodo Payments reference app",
   description:
@@ -37,8 +53,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
-      <body className="min-h-screen bg-ink-50 font-body text-ink-900 antialiased" suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} ${anton.variable} ${spaceMono.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen bg-brand-cream font-body text-ink-900 antialiased" suppressHydrationWarning>
         <SessionProvider>
           <SidebarStateProvider>
             <ToastProvider>

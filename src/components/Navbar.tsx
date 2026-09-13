@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, Sparkle, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useSession } from "./SessionProvider";
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
 import { Skeleton } from "./ui/Skeleton";
+import { DotLogo } from "./ui/DotLogo";
 import { TeamSwitcher } from "./TeamSwitcher";
 
 const PUBLIC_LINKS = [{ href: "/pricing", label: "Pricing" }, { href: "/studio", label: "Studio" }];
@@ -46,9 +47,9 @@ export function Navbar() {
   </div>;
 
   return <header className="sticky top-0 z-40 w-full px-3 pt-3 sm:px-6">
-    <motion.div animate={{ maxWidth: scrolled ? 860 : 1152, borderRadius: scrolled ? 28 : 18 }} transition={{ type: "spring", stiffness: 220, damping: 26 }} className="mx-auto border border-ink-100 bg-white/90 shadow-soft backdrop-blur">
+    <motion.div animate={{ maxWidth: scrolled ? 860 : 1152, borderRadius: scrolled ? 28 : 18 }} transition={{ type: "spring", stiffness: 220, damping: 26 }} className="mx-auto border border-ink-100 bg-brand-cream/90 shadow-soft backdrop-blur">
       <div className={cn("mx-auto flex h-[64px] items-center justify-between gap-4 px-4 sm:px-6", scrolled && "sm:px-5")}>
-        <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-lg font-bold text-ink-900"><span className="grid h-8 w-8 place-items-center rounded-full bg-lime-400 text-ink-900"><Sparkle size={16} strokeWidth={2.5} /></span><span>Atlas Studio</span></Link>
+        <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-lg font-bold text-ink-900"><DotLogo className="h-8 w-8" /><span>Atlas Studio</span></Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-ink-700 md:flex">{links.map((link) => <Link key={link.href} href={link.href} className={cn("transition-colors hover:text-ink-900", pathname === link.href && "font-semibold text-ink-900")}>{link.label}</Link>)}</nav>
         <div className="hidden shrink-0 items-center md:flex">{renderAuth()}</div>
         <button type="button" aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)} className="rounded-full p-2 text-ink-800 hover:bg-ink-50 md:hidden">{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>

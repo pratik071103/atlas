@@ -39,6 +39,13 @@ export default {
           800: "#1c211c",
           900: "#0c0f0c",
         },
+        // FOUNDRY . STUDIO brand palette (mirrors the hero) — warm cream
+        // page bg, chartreuse highlight chip, vivid blue wordmark.
+        brand: {
+          lime: "#C6FE1E",
+          blue: "#1264FF",
+          cream: "#F2E9DB",
+        },
         paper: "#ffffff",
       },
       fontFamily: {

@@ -1,15 +1,13 @@
 import Link from "next/link";
-import { Sparkle } from "lucide-react";
+import { DotLogo } from "./ui/DotLogo";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-ink-100 bg-white">
+    <footer className="mt-auto border-t border-ink-100 bg-brand-cream">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <span className="flex items-center gap-2 font-display text-base font-bold text-ink-900">
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-lime-400 text-ink-900">
-              <Sparkle size={14} strokeWidth={2.5} />
-            </span>
+            <DotLogo className="h-7 w-7" />
             Atlas Studio
           </span>
           <p className="mt-2 text-xs text-ink-400">
