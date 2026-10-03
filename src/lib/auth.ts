@@ -35,7 +35,7 @@ export const auth = betterAuth({
   // is no `@better-auth/cli migrate` step before the app can boot.
   database: mongodbAdapter(mongoDb),
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-  secret: process.env.BETTER_AUTH_SECRET ?? "atlas-studio-dev-secret-change-me",
+  secret: process.env.BETTER_AUTH_SECRET ?? "foundry-studio-dev-secret-change-me",
   trustedOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -86,7 +86,7 @@ export const auth = betterAuth({
 
   plugins: [
     anonymous({
-      emailDomainName: "guest.atlas.local",
+      emailDomainName: "guest.foundry.local",
       // Fires when an anonymous (guest) user signs up or logs in for real.
       onLinkAccount: async ({ anonymousUser, newUser }) => {
         const moved = await reassignOwner(anonymousUser.user.id, newUser.user.id);

@@ -55,7 +55,7 @@ export function InviteAcceptClient({
             send a new one.
           </p>
           <Button href="/" variant="secondary" className="mt-2">
-            Go to Atlas Studio
+            Go to Foundry.Studio
           </Button>
         </Card>
       </main>

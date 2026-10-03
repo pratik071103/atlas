@@ -1,4 +1,4 @@
-# Atlas Studio
+# Foundry.Studio
 
 A small AI-image-studio storefront built as a **Dodo Payments reference app**. It exercises
 every major billing surface Dodo offers — one-time packs, tiered subscriptions with
@@ -6,6 +6,9 @@ upgrade/downgrade, usage-based metering, seat add-ons, on-demand top-ups and lic
 against a real MongoDB-backed account model with guest checkout.
 
 **Next.js 15 (App Router) · TypeScript · Tailwind · MongoDB · Better Auth**
+
+> Known problems in the credit and access logic are tracked in [`ISSUES.md`](ISSUES.md).
+> Read it before taking this anywhere near production.
 
 It runs with **only `MONGODB_URI` set**. Without a Dodo API key it falls back to simulate
 mode: purchases complete instantly, license keys are minted locally, and usage events are
@@ -43,13 +46,13 @@ indexes are created on first use.
 
 | Flow | Where |
 |---|---|
-| Buy any of the five billing models, in redirect / overlay / inline checkout | `/pricing` |
+| Buy a plan, pack, usage plan, team seats or the Studio Pass, in redirect / overlay / inline checkout | `/pricing` |
 | Guest checkout, then sign up and watch everything follow you | any auth prompt |
 | Spend credits, ingest metered events, watch the log | `/dashboard` |
 | Upgrade / downgrade / cancel a subscription | `/dashboard`, `/profile` |
 | Both credit buckets and the ledger behind them | `/profile` |
-| License key → unblur the premium gallery | `/studio` |
-| Every webhook Dodo delivered, as JSON | `/dev/webhooks` (dev only) |
+| Invite teammates to seats, accept an invite | `/team`, `/invite/[token]` |
+| License key → the noise dissolves to reveal the hidden picture | `/studio` |
 
 ---
 
@@ -63,14 +66,18 @@ indexes are created on first use.
    DODO_API_KEY=...
    DODO_WEBHOOK_SECRET=whsec_...
    ```
+   For team seats, also create the team base product and seat add-on and set
+   `DODO_TEAM_BASE_PRODUCT_ID` and `DODO_SEAT_ADDON_ID`. `NEXT_PUBLIC_DODO_STORE_URL`
+   shows the storefront preview button on `/pricing`; `NEXT_PUBLIC_DODO_MODE` tells the
+   checkout SDK which environment to load. All of them are listed in `.env.example`.
 3. **Expose the webhook endpoint.** Run `ngrok http 3000` and register
    `https://<tunnel>.ngrok.app/api/auth/dodopayments/webhooks` in the Dodo dashboard. That
    path is mounted by the adapter, not by hand — signature verification and event dispatch
    both happen inside it.
 4. **Pay with a test card:** `4000 0000 0000 0002` succeeds, `4000 0000 0000 0008` declines.
 
-Watch `/dev/webhooks` while you do it. Payments advance the purchase; credits land exactly
-once even if Dodo re-delivers the event.
+Payments advance the purchase; credits land exactly once even if Dodo re-delivers the event.
+Every verified event is also recorded in the `webhookEvents` collection if you need to inspect one.
 
 ---
 
@@ -84,16 +91,18 @@ shared/
 src/
   app/
     (marketing)/        landing
-    pricing/            the shelf: cycle toggle + checkout-mode switch
+    pricing/            the shelf + checkout-mode switch (monthly plans)
     dashboard/          KPIs, usage playground, event log, subscription, library
     profile/            identity, credit meter, licenses, portal
-    studio/             blurred gallery + license activate/validate
-    dev/webhooks/       webhook inspector (dev only)
+    studio/             hidden picture + license activate / lock again
+    team/               seats, invites, members
+    invite/[token]/     accept a team invite
     api/
       auth/[...all]/    Better Auth — also mounts the Dodo webhook endpoint
       checkout/         on-demand (mandate_only) sessions + simulate path
       billing/          me · credits/spend · subscription change-plan & cancel
       license/          activate · validate · deactivate
+      teams/            team, members, invite accept
       usage/            event log + ingest results
   lib/
     db.ts               Mongo client, typed documents, index bootstrap
@@ -103,7 +112,7 @@ src/
     http.ts             withIdentity() and service-error → status mapping
     api.ts              typed browser client for this app's own API
     services/           wallet · purchases · subscriptions · licenses · usage
-                        · webhook-handlers · linking
+                        · teams · webhook-handlers · linking
   components/           ui kit + feature components
 ```
 
@@ -125,7 +134,7 @@ src/
 
 The plan bucket is *set*, not incremented: it is recomputed as the sum of every active
 plan-granting purchase. That is why upgrades, downgrades, extra seats and cancellations all
-land on the right number instead of drifting apart.
+land on the right number instead of drifting apart. *(Not yet true: a sync currently refills credits already spent this cycle — see [ISSUES.md](ISSUES.md#2-plan-changes-refill-credits-the-user-already-spent--high).)*
 
 ### Guests
 

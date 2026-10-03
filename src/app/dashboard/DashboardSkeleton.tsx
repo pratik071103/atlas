@@ -7,14 +7,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
  */
 export function DashboardSkeleton() {
   return (
-    <main className="mx-auto max-w-6xl px-6 py-12">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-2.5">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-9 w-64" />
-          <Skeleton className="h-3 w-48" />
-        </div>
-        <Skeleton className="h-12 w-52 rounded-full" />
+    <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-16 md:pt-24">
+      {/* Matches the SweptTitle block's own -mt pull-up and height, so the
+          real title lands where the placeholder was. */}
+      <Skeleton className="-mt-10 h-24 w-[22rem] sm:-mt-14 md:-mt-16 md:h-36" />
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+        <Skeleton className="h-4 w-full max-w-sm" />
+        <Skeleton className="h-[38px] w-44 rounded-full" />
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">

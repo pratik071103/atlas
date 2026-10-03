@@ -64,9 +64,9 @@ export async function generateMetadata({ params }: Props) {
   const team = member ? await c.teams.findOne({ _id: member.teamId }) : null;
 
   return {
-    title: team ? `Join ${team.name} on Atlas Studio` : "Invite — Atlas Studio",
+    title: team ? `Join ${team.name} on Foundry.Studio` : "Invite — Foundry.Studio",
     description: team
-      ? `You've been invited to join ${team.name}'s workspace on Atlas Studio.`
+      ? `You've been invited to join ${team.name}'s workspace on Foundry.Studio.`
       : "This invite link is no longer valid.",
   };
 }

@@ -20,8 +20,8 @@ import { MongoClient, type ClientSession, type Collection, type Db } from "mongo
 // lives in src/lib/services/* — route handlers never touch a collection.
 // ---------------------------------------------------------------------------
 
-const FALLBACK_URI = "mongodb://127.0.0.1:27017/atlas_studio";
-const DEFAULT_DB_NAME = "atlas_studio";
+const FALLBACK_URI = "mongodb://127.0.0.1:27017/foundry_studio";
+const DEFAULT_DB_NAME = "foundry_studio";
 
 function resolveUri(): string {
   const uri = process.env.MONGODB_URI?.trim();
@@ -50,17 +50,17 @@ function resolveDbName(uri: string): string {
 // client on globalThis keeps one connection pool instead of leaking a new one
 // per edit.
 const globalForMongo = globalThis as typeof globalThis & {
-  __atlasMongoClient?: MongoClient;
-  __atlasIndexBootstrap?: Promise<void>;
+  __foundryMongoClient?: MongoClient;
+  __foundryIndexBootstrap?: Promise<void>;
 };
 
 const uri = resolveUri();
 
 export const mongoClient: MongoClient =
-  globalForMongo.__atlasMongoClient ?? new MongoClient(uri);
+  globalForMongo.__foundryMongoClient ?? new MongoClient(uri);
 
 if (process.env.NODE_ENV !== "production") {
-  globalForMongo.__atlasMongoClient = mongoClient;
+  globalForMongo.__foundryMongoClient = mongoClient;
 }
 
 /** Handle used by Better Auth's mongodbAdapter — available synchronously. */
@@ -305,16 +305,16 @@ async function bootstrapIndexes(): Promise<void> {
 }
 
 function indexBootstrap(): Promise<void> {
-  if (!globalForMongo.__atlasIndexBootstrap) {
-    globalForMongo.__atlasIndexBootstrap = bootstrapIndexes().catch((err) => {
+  if (!globalForMongo.__foundryIndexBootstrap) {
+    globalForMongo.__foundryIndexBootstrap = bootstrapIndexes().catch((err) => {
       // Let the next call retry rather than caching a rejected promise —
       // otherwise a database that was briefly unreachable at boot would stay
       // index-less for the life of the process.
-      globalForMongo.__atlasIndexBootstrap = undefined;
+      globalForMongo.__foundryIndexBootstrap = undefined;
       throw err;
     });
   }
-  return globalForMongo.__atlasIndexBootstrap;
+  return globalForMongo.__foundryIndexBootstrap;
 }
 
 /** The app's collections, with indexes guaranteed to exist. */

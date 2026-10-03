@@ -29,7 +29,8 @@ const mono = IBM_Plex_Mono({
   display: "swap",
 });
 
-// Heavy condensed display face — used exclusively in the Hero heading.
+// Heavy condensed display face — used in the Hero heading and, at a smaller
+// scale, the pricing page's "STORE" title (same SelectableWord treatment).
 const anton = Anton({
   subsets: ["latin"],
   weight: "400",
@@ -46,9 +47,16 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Atlas Studio — a Dodo Payments reference app",
+  title: "Foundry.Studio — a Dodo Payments reference app",
   description:
     "A small AI image studio demonstrating every Dodo Payments billing model: one-time packs, subscriptions, usage-based metering, seats, on-demand top-ups and license keys.",
+  icons: {
+    icon: [
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/logo-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/logo-192.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

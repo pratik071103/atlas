@@ -24,7 +24,7 @@ import { getDodoClient, SIMULATE_PAYMENTS } from "@/lib/dodo";
 // ---------------------------------------------------------------------------
 
 /** Name the activated instance is registered under in the Dodo dashboard. */
-const INSTANCE_NAME = "Atlas Studio (web)";
+const INSTANCE_NAME = "Foundry.Studio (web)";
 
 export interface LicenseView {
   id: string;
@@ -143,6 +143,7 @@ export async function activateLicense(userId: string, rawKey: string): Promise<L
   if (!key) throw new LicenseError("Paste a license key first.", 400);
 
   const c = await getCollections();
+
   const existing = await c.licenses.findOne({ key });
 
   if (existing && existing.userId !== userId) {
@@ -173,11 +174,19 @@ export async function activateLicense(userId: string, rawKey: string): Promise<L
       instanceId = result.id;
       instanceName = result.name ?? INSTANCE_NAME;
     } catch (err) {
+      // The SDK's own text is written for whoever is reading the logs, not
+      // for a customer: a mistyped key surfaced as "404 The requested
+      // resource could not be found. This might be because the ID doesn't
+      // exist or the resource has been deleted. Please verify your request
+      // parameters and try again." Keep all of that in the server log and
+      // tell the customer the one thing they can act on.
       console.error("[licenses] activation failed:", err);
-      const detail = err instanceof Error ? err.message : "Unknown Dodo error.";
+      const status = (err as { status?: number } | null)?.status;
       throw new LicenseError(
-        `Dodo rejected the license key: ${detail}`,
-        400
+        status === 404
+          ? "That license key wasn't recognised. Check it for typos and try again."
+          : "Could not activate that key right now. Please try again in a moment.",
+        status === 404 ? 400 : 502
       );
     }
   }

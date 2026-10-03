@@ -148,9 +148,9 @@ export const CATALOG: Product[] = [
     ],
   },
   {
-    id: "atlas-plans",
+    id: "foundry-plans",
     group: "subscription",
-    name: "Atlas Plans",
+    name: "Foundry Plans",
     tagline: "Monthly credits and generation limits for regular creators.",
     ctaLabel: "Choose plan",
     tiers: [
@@ -161,7 +161,7 @@ export const CATALOG: Product[] = [
         yearly: 96,
         credits: 25,
         dodoProductId: "pdt_0NlXH5jKlUwUwrJadVQEz",
-        description: "Good for trying Atlas out.",
+        description: "Good for trying Foundry.Studio out.",
         features: ["25 plan credits / month", "Standard queue", "Email support"],
         art: { from: "#fafef0", to: "#d3f16f", accent: "#6d8e15", motif: "orbit", seed: "starter" },
       },
@@ -218,7 +218,7 @@ export const CATALOG: Product[] = [
     id: "team-workspace",
     group: "seat_based",
     name: "Extra Seats",
-    tagline: "Add teammates to your Atlas workspace. Each seat includes 20 monthly credits.",
+    tagline: "Add teammates to your Foundry.Studio workspace. Each seat includes 20 monthly credits.",
     ctaLabel: "Add seats",
     tiers: [
       {
@@ -276,7 +276,7 @@ export const CATALOG: Product[] = [
   {
     id: "studio-pass",
     group: "one_time",
-    name: "Atlas Studio Pass",
+    name: "Foundry.Studio Pass",
     tagline: "A license key that unlocks the premium gallery in the Studio.",
     badge: "License key",
     ctaLabel: "Buy pass",

@@ -94,15 +94,6 @@ export interface License {
   createdAt: string;
 }
 
-export interface WebhookEventRow {
-  id: string;
-  eventType: string;
-  status: string;
-  eventId: string | null;
-  createdAt: string;
-  payload: string;
-}
-
 // ---------------------------------------------------------------------------
 // Team / seat-based billing
 // ---------------------------------------------------------------------------
@@ -179,8 +170,6 @@ export const api = {
 
   getCheckoutStatus: (purchaseId: string) =>
     request<CheckoutStatus>(`/checkout/${purchaseId}/status`),
-
-  getWebhookEvents: () => request<{ events: WebhookEventRow[] }>("/webhooks/events"),
 
   runPlaygroundAction: (actionId: string) =>
     request<{ wallet: WalletBalance; event: UsageEvent }>("/billing/credits/spend", {

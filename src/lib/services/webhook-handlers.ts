@@ -156,7 +156,7 @@ async function reverseCredits(purchase: PurchaseDoc, reason: string): Promise<vo
 }
 
 export const webhookHandlers = {
-  // Audit every verified event; newest is visible on /dev/webhooks.
+  // Audit every verified event into the webhookEvents collection.
   onPayload: async (payload: WebhookPayload) => {
     await logEvent(payload, "received");
     console.log(`[webhook] ${eventType(payload)}`);

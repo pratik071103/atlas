@@ -1,28 +1,14 @@
 "use client";
 
-import { ExternalLink, PanelTop, SquareCode, Store } from "lucide-react";
+import { Store } from "lucide-react";
 import { StorefrontButton } from "@/components/ui/StorefrontButton";
+import { LinkPreview } from "@/components/ui/LinkPreview";
 import type { CheckoutMode } from "@/lib/checkout";
 
-const MODES: { id: CheckoutMode; label: string; icon: typeof ExternalLink; blurb: string }[] = [
-  {
-    id: "redirect",
-    label: "Redirect",
-    icon: ExternalLink,
-    blurb: "Customer is sent to a Dodo-hosted checkout page, then returned here.",
-  },
-  {
-    id: "overlay",
-    label: "Overlay",
-    icon: PanelTop,
-    blurb: "Checkout opens in a modal overlay on top of the current page.",
-  },
-  {
-    id: "inline",
-    label: "Inline",
-    icon: SquareCode,
-    blurb: "Checkout embeds directly inside the page — no redirect, no modal.",
-  },
+const MODES: { id: CheckoutMode; label: string }[] = [
+  { id: "redirect", label: "Redirect" },
+  { id: "overlay", label: "Overlay" },
+  { id: "inline", label: "Inline" },
 ];
 
 interface Props {
@@ -31,8 +17,6 @@ interface Props {
 }
 
 export function CheckoutModeSwitch({ value, onChange }: Props) {
-  const active = MODES.find((m) => m.id === value)!;
-
   // Dodo-hosted storefront preview page. Hidden when NEXT_PUBLIC_DODO_STORE_URL
   // is not set.
   const storefrontUrl = process.env.NEXT_PUBLIC_DODO_STORE_URL ?? "";
@@ -41,14 +25,22 @@ export function CheckoutModeSwitch({ value, onChange }: Props) {
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
       <div className="flex items-center gap-2.5">
         {storefrontUrl && (
-          <StorefrontButton
-            href={storefrontUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            icon={Store}
-            tooltip="storefront preview"
-            ariaLabel="Open Dodo storefront preview"
-          />
+          // The image card replaces StorefrontButton's own text tooltip —
+          // both at once would stack two floating things over one small
+          // icon. The caption inside the card carries the label instead.
+          <LinkPreview
+            imageSrc="/storefront-preview.png"
+            caption="storefront preview"
+            alt="Preview of the Foundry.Studio storefront"
+          >
+            <StorefrontButton
+              href={storefrontUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              icon={Store}
+              ariaLabel="Open Dodo storefront preview"
+            />
+          </LinkPreview>
         )}
 
         <div className="inline-flex shrink-0 rounded-full border border-ink-200 bg-white p-1">

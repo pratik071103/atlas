@@ -1,8 +1,9 @@
 "use client";
 
-import { motion, animate } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { StorefrontButton } from "@/components/ui/StorefrontButton";
+import { SelectableWord } from "@/components/ui/SelectableWord";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -15,9 +16,6 @@ const CHAR_MS: Record<string, number> = {
   ITS:     65,  // fastest  (3 chars × 65ms  = 195ms)
   FINEST:  100, // slows    (6 chars × 100ms = 600ms)
 };
-
-const HOLD_MS  = 320; // pause at full-word selection before deselecting
-const EXIT_S   = 0.18; // deselect animation duration (seconds)
 
 // ── Brand (FOUNDRY . STUDIO) reveal ─────────────────────────────────────
 // The dot is the loading marker first: it stays centred, dims + dips like a
@@ -59,103 +57,6 @@ const STUDIO_STYLE = {
   fontSize: "clamp(2rem, 6.5vw, 8.5rem)",
   color: "#1264FF",
 } as const;
-
-// ---------------------------------------------------------------------------
-// SelectableWord — letter-by-letter highlight, hold, then deselect
-// ---------------------------------------------------------------------------
-
-function SelectableWord({
-  word,
-  trigger,
-  persist = false,
-  onDone,
-}: {
-  word: string;
-  trigger: boolean;
-  persist?: boolean;
-  onDone: () => void;
-}) {
-  const overlayRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (!trigger) return;
-
-    const el = overlayRef.current;
-    if (!el) return;
-
-    let stopped = false;
-
-    const wait = (ms: number) =>
-      new Promise<void>((res) => setTimeout(res, ms));
-
-    async function run() {
-      const n = word.length;
-      const charPct = 100 / n;
-      const charDur = CHAR_MS[word] / 1000;
-
-      // ── Letter-by-letter expansion ───────────────────────────────
-      for (let i = 1; i <= n; i++) {
-        if (stopped) return;
-        await animate(
-          el,
-          { width: `${(i * charPct).toFixed(2)}%` },
-          { duration: charDur, ease: "linear" }
-        );
-      }
-
-      // ── Hold at full-word coverage ───────────────────────────────
-      if (stopped) return;
-      await wait(HOLD_MS);
-
-      // ── Deselect — return to original black text ─────────────────
-      // persist words (e.g. FINEST) skip the deselect and stay selected.
-      if (!persist) {
-        if (stopped) return;
-        await animate(el, { width: "0%" }, { duration: EXIT_S, ease: [0.4, 0, 1, 1] });
-      }
-
-      if (!stopped) onDone();
-    }
-
-    run();
-
-    return () => {
-      stopped = true;
-    };
-  }, [trigger, word, persist, onDone]);
-
-  return (
-    <span className="relative inline-block">
-      {/* Layer 1 — permanent black text */}
-      {word}
-
-      {/* Layer 2 — selection reveal, clips from left */}
-      <span
-        ref={overlayRef}
-        aria-hidden
-        className="pointer-events-none absolute left-0 top-0 h-full overflow-hidden"
-        style={{ width: "0%" }}
-      >
-        {/* White text on blue — same typography, clipped by parent width */}
-        <span
-          className="block whitespace-nowrap"
-          style={{
-            color: "#ffffff",
-            background: "rgba(55, 97, 230, 0.88)",
-            fontFamily: "inherit",
-            fontSize: "inherit",
-            fontWeight: "inherit",
-            letterSpacing: "inherit",
-            lineHeight: "inherit",
-            textTransform: "inherit",
-          }}
-        >
-          {word}
-        </span>
-      </span>
-    </span>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Masked slide-up line reveal
@@ -261,16 +162,16 @@ export function Hero() {
       >
         {/* Line 1 — enters as FOUNDRY lands, so FOUNDRY clearly comes first */}
         <HeadingLine delay={TAGLINE_START}>
-          <SelectableWord word="PRICING" trigger={currentWord === 0} onDone={advance} />
+          <SelectableWord word="PRICING" trigger={currentWord === 0} charDurationMs={CHAR_MS.PRICING} onDone={advance} />
         </HeadingLine>
 
         {/* Line 2 */}
         <HeadingLine delay={TAGLINE_START + 0.14}>
-          <SelectableWord word="AT"     trigger={currentWord === 1} onDone={advance} />
+          <SelectableWord word="AT"     trigger={currentWord === 1} charDurationMs={CHAR_MS.AT} onDone={advance} />
           {" "}
-          <SelectableWord word="ITS"    trigger={currentWord === 2} onDone={advance} />
+          <SelectableWord word="ITS"    trigger={currentWord === 2} charDurationMs={CHAR_MS.ITS} onDone={advance} />
           {" "}
-          <SelectableWord word="FINEST" trigger={currentWord === 3} persist onDone={advance} />
+          <SelectableWord word="FINEST" trigger={currentWord === 3} charDurationMs={CHAR_MS.FINEST} persist onDone={advance} />
           <StorefrontButton
             href="/pricing"
             label="PRICING"

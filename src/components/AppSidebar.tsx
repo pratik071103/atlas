@@ -14,7 +14,6 @@ import {
   Tag,
   User,
   Users,
-  Webhook,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useSidebarState } from "./SidebarContext";
@@ -24,7 +23,7 @@ import { DotLogo } from "./ui/DotLogo";
 import { TeamSwitcher } from "./TeamSwitcher";
 
 // ---------------------------------------------------------------------------
-// Nav structure — mirrors the current Navbar exactly
+// Nav structure
 // ---------------------------------------------------------------------------
 
 const PUBLIC_NAV = [
@@ -37,11 +36,6 @@ const AUTHED_NAV = [
   { href: "/team", label: "Team", icon: Users },
   { href: "/profile", label: "Profile", icon: User },
 ];
-
-const DEV_NAV =
-  process.env.NODE_ENV === "development"
-    ? [{ href: "/dev/webhooks", label: "Webhooks", icon: Webhook }]
-    : [];
 
 // ---------------------------------------------------------------------------
 // SidebarTrigger — exposed so LayoutShell can embed it in the content header
@@ -139,8 +133,12 @@ function NavUser() {
       <button
         id="nav-user-btn"
         onClick={() => setMenuOpen((o) => !o)}
+        // `group` so the name/email/chevron below can flip to the pill's
+        // foreground — this button shares --sidebar-accent with the nav
+        // items, so it turns blue on hover and its ink-shaded text would
+        // otherwise disappear into it.
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-[var(--sidebar-accent)]",
+          "group flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-[var(--sidebar-accent)]",
           menuOpen && "bg-[var(--sidebar-accent)]"
         )}
       >
@@ -161,14 +159,14 @@ function NavUser() {
         {sidebarOpen && (
           <>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-ink-900">
+              <p className="truncate text-xs font-semibold text-ink-900 transition-colors group-hover:text-[var(--sidebar-accent-fg)]">
                 {identity.name ?? (identity.kind === "guest" ? "Guest" : "User")}
               </p>
-              <p className="truncate text-[10px] text-ink-500">
+              <p className="truncate text-[10px] text-ink-500 transition-colors group-hover:text-[var(--sidebar-accent-fg)]">
                 {identity.email ?? "Guest checkout"}
               </p>
             </div>
-            <ChevronsUpDown size={13} className="shrink-0 text-ink-400" />
+            <ChevronsUpDown size={13} className="shrink-0 text-ink-400 transition-colors group-hover:text-[var(--sidebar-accent-fg)]" />
           </>
         )}
       </button>
@@ -242,16 +240,22 @@ function NavItem({
           : "text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-fg)]"
       )}
     >
+      {/* The icon and chevron have to track the pill, not the page: once the
+          active/hover background is --sidebar-accent (now blue), an ink-900
+          icon on it is nearly invisible. Both follow the pill's foreground
+          instead of carrying their own ink shade. */}
       <Icon
         size={17}
         className={cn(
           "shrink-0 transition-colors",
-          active ? "text-ink-900" : "text-ink-500 group-hover:text-ink-700"
+          active
+            ? "text-[var(--sidebar-accent-fg)]"
+            : "text-ink-500 group-hover:text-[var(--sidebar-accent-fg)]"
         )}
       />
       {!collapsed && <span className="truncate">{label}</span>}
       {!collapsed && active && (
-        <ChevronRight size={13} className="ml-auto text-ink-400" />
+        <ChevronRight size={13} className="ml-auto text-[var(--sidebar-accent-fg)] opacity-70" />
       )}
     </Link>
   );
@@ -269,7 +273,6 @@ export function AppSidebar() {
   const navLinks = [
     ...PUBLIC_NAV,
     ...(identity ? AUTHED_NAV : []),
-    ...DEV_NAV,
   ];
 
   const collapsed = !sidebarOpen;
@@ -297,7 +300,7 @@ export function AppSidebar() {
             href="/"
             className="flex shrink-0 items-center gap-2 font-display text-base font-bold text-ink-900"
           >
-            <DotLogo className="h-8 w-8" />
+            <DotLogo className="text-3xl" />
             {!collapsed && (
               <motion.span
                 initial={{ opacity: 0 }}
@@ -306,7 +309,7 @@ export function AppSidebar() {
                 transition={{ duration: 0.15 }}
                 className="whitespace-nowrap"
               >
-                Atlas Studio
+                Foundry.Studio
               </motion.span>
             )}
           </Link>

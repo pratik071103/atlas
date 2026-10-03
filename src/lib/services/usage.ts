@@ -104,7 +104,7 @@ export async function runPlaygroundAction(
         ? null
         : SIMULATE_PAYMENTS
           ? "Credit ledger recorded locally in simulation mode."
-          : "Credit ledger entry recorded in Dodo and Atlas.",
+          : "Credit ledger entry recorded in Dodo and Foundry.Studio.",
       createdAt: new Date(),
     };
     await c.usageEvents.insertOne(doc, session ? { session } : {});

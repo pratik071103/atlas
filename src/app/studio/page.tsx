@@ -1,30 +1,89 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Lock, Sparkles, X } from "lucide-react";
-import { LicenseUnlockCard } from "@/components/LicenseUnlockCard";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { GlyphMatrix, dissolveFront } from "@/components/ui/GlyphMatrix";
+import { SweptTitle, CAPTION_STYLE } from "@/components/ui/SweptTitle";
+import { AnnotatedText } from "@/components/ui/AnnotatedText";
+import { StorefrontButton } from "@/components/ui/StorefrontButton";
+import { Input } from "@/components/ui/Input";
 import { useSession } from "@/components/SessionProvider";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { CtaButton } from "@/components/ui/Button";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { api, type License } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
-// The premium gallery.
+// /studio — the license-key demo, stripped to its argument: one hidden
+// picture, one key field.
 //
-// Every piece renders blurred until a license key activates and validates,
-// then the same <ProductArt> elements resolve in place — the artwork is
-// mounted the whole time, so it is one CSS transition rather than an asset
-// swap. Deactivating the key blurs them straight back.
+// Two layers, both made of 0s and 1s, cross-faded: an animated field of
+// random glyphs (locked) over the hidden picture (unlocked). Because both
+// sides of the fade are the same kind of mark, it reads as the noise settling
+// into the picture rather than one image dissolving to expose another.
+//
+// An earlier version drove the picture out of the canvas itself, sampling its
+// luminance into each cell's density. That is the right trick for a bold
+// silhouette, but this source is ALREADY glyph art at roughly the same pitch
+// as the grid, so resampling it aliased badly — the dodo arrived as a smudge
+// no amount of curve tuning fixed. Showing the artwork directly is exact, and
+// the fade is just as clean.
+//
+// The reveal is a dissolve, not a flat cross-fade: the noise clears from the
+// centre outward cell by cell (GlyphMatrix), and the picture is uncovered
+// through a radial mask driven by the SAME progress value every frame, so the
+// dodo appears exactly where the glyphs have left. A slow focus-pull on the
+// picture underneath carries it over the last stretch.
 // ---------------------------------------------------------------------------
 
+const HIDDEN_PICTURE = "/hidden-dodo.png";
+
+/** Full dissolve, ms. Long enough to read as a resolve, short enough that the
+ * payoff doesn't drag. */
+const REVEAL_MS = 1800;
+
+// Natural size of the PNG. It is shown at exactly this size, not stretched
+// to the panel: its digits are typed at ~4.7px wide on a ~10px line, the
+// same as the noise (8px glyphs on a 10px grid), so 1:1 is what makes the
+// dodo's 0s and 1s match the field around it. Panels too short to fit it
+// (phones) scale it down to fit.
+const PICTURE_W = 515;
+const PICTURE_H = 509;
+// The lift re-centres the artwork, which sits slightly below the PNG's middle.
+const PICTURE_FIT = "translateY(-1.5%)";
+// Where the picture starts its focus-pull from: a touch closer and soft.
+const PICTURE_FIT_HIDDEN = "translateY(-1.5%) scale(1.06)";
+
+// Module-level so its identity is stable — GlyphMatrix restarts its loop
+// when its config changes.
+const GLYPH_ALPHA: [number, number] = [0.18, 0.72];
+
+// Opaque at the cleared radius, clear at the front — the custom properties
+// are written per frame by onDissolveProgress, never through React.
+const REVEAL_MASK =
+  "radial-gradient(ellipse farthest-corner at 50% 50%, #000 var(--reveal-inner, -50%), transparent var(--reveal-outer, -20%))";
+
+// Deep enough to read on a white panel. Brand lime (#C6FE1E) is the accent
+// everywhere else, but at the low alphas this field lives at it disappears
+// against light backgrounds — this is the same hue, carried far enough down
+// the ramp to hold contrast.
+const GLYPH_GREEN = "#6d8e15";
+
 export default function StudioPage() {
-  const { identity, loading: sessionLoading, openAuthModal } = useSession();
+  const { identity, loading: sessionLoading, openAuthModal, setAppError } = useSession();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [unlocked, setUnlocked] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [keyInput, setKeyInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const pictureRef = useRef<HTMLDivElement>(null);
+
+  // Runs every animation frame during a reveal, so it writes the mask
+  // straight onto the element instead of round-tripping through state.
+  const trackDissolve = useCallback((progress: number) => {
+    const el = pictureRef.current;
+    if (!el) return;
+    const { inner, outer } = dissolveFront(progress);
+    el.style.setProperty("--reveal-inner", `${(inner * 100).toFixed(2)}%`);
+    el.style.setProperty("--reveal-outer", `${(outer * 100).toFixed(2)}%`);
+  }, []);
 
   const load = useCallback(async () => {
     if (!identity) {
@@ -45,119 +104,172 @@ export default function StudioPage() {
     void load();
   }, [sessionLoading, load]);
 
+  const activeKey = licenses.find((l) => l.status === "active")?.key ?? null;
+
+  async function activate(event: React.FormEvent) {
+    event.preventDefault();
+    if (!identity) {
+      openAuthModal();
+      return;
+    }
+    setBusy(true);
+    setAppError(null);
+    try {
+      await api.activateLicense(keyInput.trim());
+      setKeyInput("");
+      await load();
+    } catch (e) {
+      setAppError((e as Error).message, "License error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function lockAgain() {
+    if (!activeKey) return;
+    setBusy(true);
+    setAppError(null);
+    try {
+      await api.deactivateLicense(activeKey);
+      await load();
+    } catch (e) {
+      setAppError((e as Error).message, "License error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ready = !sessionLoading && !loading;
+
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <span className="eyebrow">Studio</span>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-ink-900 sm:text-5xl">
-            The premium gallery
-          </h1>
-          <p className="mt-3 max-w-xl text-lg text-ink-600">
-            Licensed artwork, blurred until a key checks out. Activation and validation go
-            through Dodo&apos;s public license endpoints — the same calls a desktop app would
-            make on launch.
-          </p>
-        </div>
-        <Badge tone={unlocked ? "lime-solid" : "ink"}>
-          <span className="inline-flex items-center gap-1.5">
-            {unlocked ? <Sparkles size={12} /> : <Lock size={12} />}
-            {unlocked ? "Unlocked" : "Locked"}
+    // Same container as the pricing header, so STUDIO lands flush left in the
+    // exact spot STORE does rather than floating in a narrower centred column.
+    <main className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-16 md:pt-24">
+      <SweptTitle
+        word="STUDIO"
+        // Lime rather than the STORE blue — the sweep is the shared gesture,
+        // the colour is what tells the two pages apart. Ink text, since white
+        // on lime is unreadable.
+        highlightFill="#C6FE1E"
+        highlightTextColor="#0c0f0c"
+      />
+
+      {/* Right-aligned, mirroring the pricing caption. Two hand-drawn marks
+          in a retro orange/teal pair — a squiggle under the action, then a
+          loop around the payoff — drawn one after the other so the caption
+          reads like it was marked up with felt tips. */}
+      <div className="mt-6 flex justify-end">
+        <p className="max-w-sm text-right" style={CAPTION_STYLE}>
+          One picture, hidden in the noise —{" "}
+          <span className="font-semibold text-ink-900">
+            <AnnotatedText variant="wavy" color="text-[#ff5a1f]" delay={0.4} duration={0.7}>
+              activate a key
+            </AnnotatedText>{" "}
+            to{" "}
+            <AnnotatedText variant="circle" color="text-[#0f9b8e]" delay={1.15} duration={0.8}>
+              resolve it.
+            </AnnotatedText>
           </span>
-        </Badge>
+        </p>
       </div>
 
-      <div className="mt-10">
-        <div className="stagger mx-auto max-w-4xl">
-            <figure
-              role={!unlocked ? "button" : undefined}
-              tabIndex={!unlocked ? 0 : undefined}
-              aria-label={!unlocked ? "Unlock premium artwork" : "Premium artwork"}
-              onClick={() => {
-                if (!unlocked) setUnlockOpen(true);
-              }}
-              onKeyDown={(event) => {
-                if (!unlocked && (event.key === "Enter" || event.key === " ")) {
-                  event.preventDefault();
-                  setUnlockOpen(true);
-                }
-              }}
-              className={`overflow-hidden rounded-xl2 border border-ink-100 bg-white shadow-soft ${
-                !unlocked
-                  ? "cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2"
-                  : ""
-              }`}
-            >
-              <div className="relative">
-                <img
-                  src="/dodo.webp"
-                  alt="Premium artwork"
-                  className={`block aspect-[16/9] w-full object-cover transition duration-700 ${!unlocked ? "blur-xl" : ""}`}
-                />
-                {!unlocked && (
-                  <span className="pointer-events-none absolute inset-0 grid place-items-center">
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-white/85 text-ink-800 shadow-soft backdrop-blur-sm">
-                      <Lock size={16} />
-                    </span>
-                  </span>
-                )}
-              </div>
-              <figcaption className="px-4 py-3 text-sm font-semibold text-ink-900">
-                Premium artwork
-              </figcaption>
-            </figure>
-        </div>
-      </div>
-
-      {unlockOpen && !unlocked && (
+      {/* An explicit aspect ratio is required, not cosmetic: GlyphMatrix
+          measures itself from clientHeight and would draw nothing inside a box
+          of indefinite height. */}
+      {/* Cream, not white: the panel is meant to sit in the page rather than
+          on it, so the glyph field reads as printed onto the paper. */}
+      {/* 4:3 on phones: at 16:9 a 375px-wide screen leaves the dodo barely
+          200px tall. */}
+      <div className="relative mt-10 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-brand-cream sm:aspect-[16/9]">
+        {/* The hidden picture, uncovered through the dissolve mask.
+            `mix-blend-multiply` is doing real work, not decoration: the asset
+            has an OPAQUE white background (checked — alpha 255 in every
+            corner), so over a cream panel it would land as a white rectangle
+            with a dodo in it. Multiplying drops white to the backdrop and
+            leaves only the digits. It sits on this wrapper, not the <Image>:
+            a mask isolates its contents, so a blend inside it would only
+            multiply against transparency and the white would come back. */}
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink-900/45 px-4 py-8 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="unlock-dialog-title"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setUnlockOpen(false);
-          }}
+          ref={pictureRef}
+          className="absolute inset-0 mix-blend-multiply"
+          style={{ maskImage: REVEAL_MASK, WebkitMaskImage: REVEAL_MASK }}
         >
-          <div className="relative max-h-[min(90vh,44rem)] w-full max-w-md overflow-y-auto rounded-xl2 bg-white p-5 shadow-2xl">
-            <button
-              type="button"
-              onClick={() => setUnlockOpen(false)}
-              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-ink-200 text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
-              aria-label="Close unlock dialog"
-            >
-              <X size={16} />
-            </button>
-            <div className="pr-10">
-              <h2 id="unlock-dialog-title" className="text-lg font-bold text-ink-900">
-                Unlock this artwork
-              </h2>
-              <p className="mt-1 text-sm text-ink-600">
-                Enter your secret key to view the premium gallery.
-              </p>
-            </div>
-            <div className="mt-5">
-              {sessionLoading || loading ? (
-                <Skeleton className="h-64 rounded-xl2" />
-              ) : !identity ? (
-                <Card className="p-5">
-                  <h3 className="text-sm font-bold text-ink-900">Sign in to use a key</h3>
-                  <p className="mt-2 text-sm text-ink-600">
-                    Continue as a guest — keys you activate now follow you if you sign up later.
-                  </p>
-                  <div className="mt-4">
-                    <CtaButton fullWidth arrow onClick={() => openAuthModal()}>
-                      Continue as guest
-                    </CtaButton>
-                  </div>
-                </Card>
-              ) : (
-                <LicenseUnlockCard licenses={licenses} unlocked={unlocked} onChange={load} />
-              )}
-            </div>
+          {/* Natural-size box, centred; max-h-full shrinks it (keeping the
+              aspect ratio) only when the panel is shorter than the art. */}
+          <div
+            className="absolute left-1/2 top-1/2 max-h-full -translate-x-1/2 -translate-y-1/2"
+            style={{ height: PICTURE_H, aspectRatio: `${PICTURE_W} / ${PICTURE_H}` }}
+          >
+            <Image
+              src={HIDDEN_PICTURE}
+              alt="The hidden artwork, drawn in ones and zeroes"
+              fill
+              sizes={`${PICTURE_W}px`}
+              className="object-contain transition-[transform,filter] ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{
+                transform: unlocked ? PICTURE_FIT : PICTURE_FIT_HIDDEN,
+                filter: unlocked ? "blur(0px)" : "blur(6px)",
+                transitionDuration: `${REVEAL_MS + 400}ms`,
+              }}
+              // Eager: lazy-loading could leave the dissolve opening onto an
+              // image that hasn't arrived yet.
+              loading="eager"
+            />
           </div>
         </div>
-      )}
+
+        {/* The noise field. It clears itself away on unlock and stops
+            drawing once gone, so it can stay mounted for the trip back. */}
+        <div className="absolute inset-0">
+          <GlyphMatrix
+            glyphs="01"
+            color={GLYPH_GREEN}
+            cellSize={10}
+            fadeBottom={0.25}
+            // Raised well above the component default: that default assumes
+            // a dark backdrop, and this panel is white.
+            alphaRange={GLYPH_ALPHA}
+            dissolved={unlocked}
+            dissolveMs={REVEAL_MS}
+            onDissolveProgress={trackDissolve}
+          />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        {!ready ? (
+          <div className="h-10" />
+        ) : unlocked ? (
+          <button
+            type="button"
+            onClick={lockAgain}
+            disabled={busy}
+            className="text-xs font-semibold uppercase tracking-[0.13em] text-ink-500 underline-offset-4 transition-colors hover:text-ink-900 hover:underline disabled:opacity-50"
+          >
+            {busy ? "Releasing…" : "Lock again"}
+          </button>
+        ) : (
+          <form onSubmit={activate} className="flex max-w-md items-center gap-2">
+            <Input
+              value={keyInput}
+              onChange={setKeyInput}
+              placeholder="XXXX-XXXX-XXXX-XXXX"
+              className="font-mono uppercase tracking-wider"
+              aria-label="License key"
+            />
+            {/* Same control as the Hero's PRICING CTA — a .Btn--label pill in
+                the blue variant, whose lime fill sweeps up on hover. It now
+                renders a real <button> so it can submit this form. */}
+            <StorefrontButton
+              type="submit"
+              label={busy ? "ACTIVATING…" : "ACTIVATE"}
+              variant="blue"
+              disabled={busy || !keyInput.trim()}
+              ariaLabel="Activate license key"
+            />
+          </form>
+        )}
+      </div>
     </main>
   );
 }

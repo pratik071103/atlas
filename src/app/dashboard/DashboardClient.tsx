@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Coins, Package, Wallet } from "lucide-react";
 import { EventLogPanel } from "@/components/EventLogPanel";
@@ -12,8 +11,9 @@ import { PurchaseLibrary } from "@/components/PurchaseLibrary";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useSession } from "@/components/SessionProvider";
 import { useToast } from "@/components/Toaster";
-import { CtaButton } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { StorefrontButton } from "@/components/ui/StorefrontButton";
+import { SweptTitle, CAPTION_STYLE } from "@/components/ui/SweptTitle";
+import { TextHighlight } from "@/components/ui/TextHighlight";
 import { api, type BillingSnapshot, type UsageEvent, type WalletBalance } from "@/lib/api";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 
@@ -41,15 +41,13 @@ const BANNER_BY_OUTCOME: Record<PaymentOutcome, Banner> = {
 const WEBHOOK_POLL_MS = 5000;
 
 export function DashboardClient() {
-  const { identity, loading: sessionLoading, openAuthModal } = useSession();
+  const { identity, loading: sessionLoading, openAuthModal, setAppError } = useSession();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [data, setData] = useState<BillingSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<Banner | null>(null);
 
   const checkoutId = searchParams.get("checkout");
 
@@ -95,11 +93,11 @@ export function DashboardClient() {
 
       seenRef.current = { statuses, tiers };
       setData(next);
-      setError(null);
+      setAppError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setAppError((e as Error).message, "Dashboard");
     }
-  }, [identity, toast]);
+  }, [identity, toast, setAppError]);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -147,25 +145,36 @@ export function DashboardClient() {
     (outcome: PaymentOutcome) => {
       // Drop ?checkout= so a refresh doesn't re-open the overlay.
       router.replace("/dashboard");
-      setBanner(BANNER_BY_OUTCOME[outcome]);
+      // Was a dismissable <Card> banner wedged above the KPIs, which pushed
+      // the whole page down on arrival. The toaster already exists for exactly
+      // this kind of "something finished" message.
+      const banner = BANNER_BY_OUTCOME[outcome];
+      if (banner.kind === "success") toast("success", "Payment successful", banner.text);
+      else setAppError(banner.text, "Payment");
       if (outcome === "success") void load();
     },
-    [router, load]
+    [router, load, toast, setAppError]
   );
 
   if (sessionLoading || loading) return <DashboardSkeleton />;
 
   if (!identity) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-24 text-center">
-        <h1 className="text-2xl font-bold text-ink-900">Your dashboard is one click away</h1>
-        <p className="mt-2 text-ink-600">
-          Continue as a guest — everything you buy follows you if you sign up later.
-        </p>
-        <div className="mx-auto mt-6 max-w-xs">
-          <CtaButton fullWidth arrow onClick={() => openAuthModal()}>
-            Continue as guest
-          </CtaButton>
+      <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-16 md:pt-24">
+        <SweptTitle word="DASHBOARD" />
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+          <p className="max-w-sm" style={CAPTION_STYLE}>
+            Everything you buy follows you if you sign up later —{" "}
+            <TextHighlight animated={false} tone="blue">
+              <span className="font-semibold text-white">continue as a guest.</span>
+            </TextHighlight>
+          </p>
+          <StorefrontButton
+            label="CONTINUE AS GUEST"
+            variant="blue"
+            onClick={() => openAuthModal()}
+            ariaLabel="Continue as guest"
+          />
         </div>
       </main>
     );
@@ -184,53 +193,25 @@ export function DashboardClient() {
   );
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-12">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <span className="eyebrow">Dashboard</span>
-          <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-ink-900">
-            Welcome back, {identity.name?.split(" ")[0] ?? "Guest"}
-          </h1>
-          <p className="mt-1 text-sm text-ink-600">
-            {identity.email ?? "No email on file"} ·{" "}
-            {identity.kind === "guest" ? "Guest checkout" : "Registered account"}
-          </p>
-        </div>
-        <CtaButton href="/pricing" dark arrow>
-          Browse more products
-        </CtaButton>
+    <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-16 md:pt-24">
+      {/* Same opening as /pricing and /studio: the big swept title flush left,
+          a mono caption pushed right. Replaces an eyebrow + <h1> + subtitle
+          stack that shared nothing with the rest of the app. */}
+      <SweptTitle word="DASHBOARD" />
+
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+        <p className="max-w-sm" style={CAPTION_STYLE}>
+          {identity.email ?? "No email on file"} ·{" "}
+          <TextHighlight animated={false} tone={identity.kind === "guest" ? "lime" : "blue"}>
+            <span
+              className={`font-semibold ${identity.kind === "guest" ? "text-ink-900" : "text-white"}`}
+            >
+              {identity.kind === "guest" ? "guest checkout" : "registered account"}
+            </span>
+          </TextHighlight>
+        </p>
+        <StorefrontButton href="/pricing" label="BROWSE PRODUCTS" variant="blue" />
       </div>
-
-      {banner && (
-        <Card
-          className={`mt-5 flex items-center justify-between gap-3 px-4 py-3 text-sm ${
-            banner.kind === "success"
-              ? "border-lime-100 bg-lime-50 text-lime-900"
-              : "border-red-100 bg-red-50 text-red-700"
-          }`}
-        >
-          {banner.text}
-          <div className="flex shrink-0 items-center gap-3">
-            {banner.kind === "failure" && (
-              <Link href="/pricing" className="font-semibold underline">
-                Retry
-              </Link>
-            )}
-            <button onClick={() => setBanner(null)} className="font-semibold">
-              Dismiss
-            </button>
-          </div>
-        </Card>
-      )}
-
-      {error && (
-        <Card className="mt-5 flex items-center justify-between gap-3 border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-          <button onClick={() => void load()} className="shrink-0 font-semibold underline">
-            Retry
-          </button>
-        </Card>
-      )}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <KpiCard

@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, KeyRound, LogOut, Sparkles, UserPlus, Users } from "lucide-react";
+import { ExternalLink, KeyRound, LogOut, Sparkles, Users } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { CreditMeter } from "@/components/CreditMeter";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { StorefrontButton } from "@/components/ui/StorefrontButton";
+import { SweptTitle, CAPTION_STYLE } from "@/components/ui/SweptTitle";
+import { TextHighlight } from "@/components/ui/TextHighlight";
+import { useToast } from "@/components/Toaster";
 import { api, type BillingSnapshot, type License, type TeamRow } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
@@ -24,7 +28,9 @@ const THEMES: { id: CheckoutTheme; label: string }[] = [
 ];
 
 export default function ProfilePage() {
-  const { identity, loading: sessionLoading, signOut, openAuthModal, refresh } = useSession();
+  const { identity, loading: sessionLoading, signOut, openAuthModal, refresh, setAppError } =
+    useSession();
+  const { toast } = useToast();
   const router = useRouter();
 
   const [billing, setBilling] = useState<BillingSnapshot | null>(null);
@@ -37,8 +43,6 @@ export default function ProfilePage() {
   const [theme, setTheme] = useState<CheckoutTheme>("light");
   const [savingName, setSavingName] = useState(false);
   const [deactivatingLicense, setDeactivatingLicense] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!identity) {
@@ -57,7 +61,7 @@ export default function ProfilePage() {
       if (teamData.owned) setOwnedTeam(teamData.owned.team);
       if (teamData.memberOf) setMemberOfTeam(teamData.memberOf.team);
     } catch (e) {
-      setError((e as Error).message);
+      setAppError((e as Error).message, "Profile");
     } finally {
       setLoading(false);
     }
@@ -77,15 +81,14 @@ export default function ProfilePage() {
   async function saveName(e: FormEvent) {
     e.preventDefault();
     setSavingName(true);
-    setError(null);
-    setNotice(null);
+    setAppError(null);
     try {
       const { error: updateError } = await authClient.updateUser({ name });
       if (updateError) throw new Error(updateError.message ?? "Could not save your name.");
       await refresh();
-      setNotice("Display name updated.");
+      toast("success", "Display name updated.");
     } catch (e) {
-      setError((e as Error).message);
+      setAppError((e as Error).message, "Profile");
     } finally {
       setSavingName(false);
     }
@@ -94,27 +97,26 @@ export default function ProfilePage() {
   async function saveTheme(next: CheckoutTheme) {
     const previous = theme;
     setTheme(next);
-    setError(null);
+    setAppError(null);
     try {
       const { error: updateError } = await authClient.updateUser({ checkoutTheme: next });
       if (updateError) throw new Error(updateError.message ?? "Could not save that preference.");
-      setNotice(`Checkout will render in ${next} from now on.`);
+      toast("success", "Preference saved", `Checkout will render in ${next} from now on.`);
     } catch (e) {
       setTheme(previous);
-      setError((e as Error).message);
+      setAppError((e as Error).message, "Profile");
     }
   }
 
   async function deactivateProfileLicense(license: License) {
     setDeactivatingLicense(license.id);
-    setError(null);
-    setNotice(null);
+    setAppError(null);
     try {
       await api.deactivateLicense(license.key);
-      setNotice("License instance deactivated.");
+      toast("success", "License instance deactivated.");
       await load();
     } catch (e) {
-      setError((e as Error).message);
+      setAppError((e as Error).message, "Profile");
     } finally {
       setDeactivatingLicense(null);
     }
@@ -122,21 +124,20 @@ export default function ProfilePage() {
 
   /** Real Dodo-hosted portal, via the adapter. Guests have no customer yet. */
   async function openPortal() {
-    setError(null);
-    setNotice(null);
+    setAppError(null);
     if (identity?.kind === "guest") {
-      setError("Create an account to manage billing — guests have no customer record yet.");
+      setAppError("Create an account to manage billing — guests have no customer record yet.", "Profile");
       return;
     }
     try {
       const { data, error: portalError } = await authClient.dodopayments.customer.portal();
       if (portalError || !data?.url) {
-        setError(portalError?.message ?? "Could not open the customer portal.");
+        setAppError(portalError?.message ?? "Could not open the customer portal.", "Profile");
         return;
       }
       window.location.href = data.url;
     } catch (e) {
-      setError((e as Error).message);
+      setAppError((e as Error).message, "Profile");
     }
   }
 
@@ -144,7 +145,7 @@ export default function ProfilePage() {
     return (
       <main className="mx-auto max-w-5xl px-6 py-16">
         <Skeleton className="h-10 w-48" />
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="mt-10 grid gap-6 lg:grid-cols-2">
           <Skeleton className="h-72 rounded-xl2" />
           <Skeleton className="h-72 rounded-xl2" />
         </div>
@@ -154,11 +155,22 @@ export default function ProfilePage() {
 
   if (!identity) {
     return (
-      <main className="mx-auto max-w-5xl px-6 py-24 text-center">
-        <h1 className="text-2xl font-bold text-ink-900">Sign in to see your profile</h1>
-        <Button className="mt-5" onClick={() => openAuthModal()}>
-          Sign in or continue as guest
-        </Button>
+      <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-16 md:pt-24">
+        <SweptTitle word="PROFILE" />
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+          <p className="max-w-sm" style={CAPTION_STYLE}>
+            Your account, credits and licenses —{" "}
+            <TextHighlight animated={false} tone="blue">
+              <span className="font-semibold text-white">sign in to see them.</span>
+            </TextHighlight>
+          </p>
+          <StorefrontButton
+            label="SIGN IN"
+            variant="blue"
+            onClick={() => openAuthModal()}
+            ariaLabel="Sign in or continue as guest"
+          />
+        </div>
       </main>
     );
   }
@@ -173,51 +185,52 @@ export default function ProfilePage() {
     ) ?? null;
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
-      <span className="eyebrow">Profile</span>
+    <main className="mx-auto w-full max-w-6xl px-6 pb-24 pt-16 md:pt-24">
+      <SweptTitle word="PROFILE" />
 
-      <div className="mt-4 flex flex-wrap items-center gap-4">
-        <Avatar
-          userId={identity.id}
-          name={identity.name}
-          className="h-16 w-16 text-xl"
-        />
-        <div>
-          <h1 className="text-3xl font-bold text-ink-900">
-            {identity.name ?? "Guest account"}
-          </h1>
-          <p className="mt-0.5 flex items-center gap-2 text-sm text-ink-600">
-            {identity.email ?? "No email on file"}
-            <Badge tone={isGuest ? "ink" : "lime"}>{isGuest ? "Guest" : "Registered"}</Badge>
-          </p>
+      {/* Identity moved out of a heading stack and into the caption row: the
+          avatar and name carry it, the mono line carries the status, and the
+          page's one primary action sits opposite — the same shape as every
+          other page's header now. */}
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Avatar userId={identity.id} name={identity.name} className="h-12 w-12 text-base" />
+          <div>
+            <p className="text-lg font-bold leading-tight text-ink-900">
+              {identity.name ?? "Guest account"}
+            </p>
+            <p className="mt-1" style={CAPTION_STYLE}>
+              {identity.email ?? "No email on file"} ·{" "}
+              <TextHighlight animated={false} tone={isGuest ? "lime" : "blue"}>
+                <span className={`font-semibold ${isGuest ? "text-ink-900" : "text-white"}`}>
+                  {isGuest ? "guest" : "registered"}
+                </span>
+              </TextHighlight>
+            </p>
+          </div>
         </div>
+
+        {isGuest ? (
+          <StorefrontButton
+            label="CREATE ACCOUNT"
+            variant="blue"
+            onClick={() => openAuthModal()}
+            ariaLabel="Create an account"
+          />
+        ) : (
+          <StorefrontButton href="/pricing" label="BROWSE PRODUCTS" variant="blue" />
+        )}
       </div>
 
       {isGuest && (
-        <Card className="mt-6 flex flex-wrap items-center justify-between gap-3 border-lavender-200 bg-lavender-50 px-4 py-3">
-          <p className="flex items-center gap-2 text-sm text-lavender-600">
-            <Sparkles size={15} />
-            You&apos;re browsing as a guest. Create an account and every purchase, credit and
-            license comes with you.
-          </p>
-          <Button variant="dark" onClick={() => openAuthModal()}>
-            <UserPlus size={15} /> Create account
-          </Button>
-        </Card>
+        <p className="mt-4 max-w-xl text-sm text-ink-600">
+          <Sparkles size={14} className="mr-1.5 inline align-[-2px] text-lime-600" />
+          Browsing as a guest — create an account and every purchase, credit and license comes
+          with you.
+        </p>
       )}
 
-      {notice && (
-        <Card className="mt-5 border-lime-100 bg-lime-50 px-4 py-3 text-sm text-lime-900">
-          {notice}
-        </Card>
-      )}
-      {error && (
-        <Card className="mt-5 border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </Card>
-      )}
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-10 grid gap-6 lg:grid-cols-2">
         <Card className="p-5">
           <h2 className="text-sm font-bold text-ink-900">Account</h2>
 

@@ -20,8 +20,8 @@ import type { ReactNode } from "react";
 //   sidebarOpen     — expanded vs icon-only; persisted in localStorage.
 // ---------------------------------------------------------------------------
 
-const UNLOCK_KEY = "atlas-sidebar-unlocked";
-const OPEN_KEY = "atlas-sidebar-open";
+const UNLOCK_KEY = "foundry-sidebar-unlocked";
+const OPEN_KEY = "foundry-sidebar-open";
 
 interface SidebarCtx {
   /** Whether the sidebar has been unlocked (user has initiated a purchase). */

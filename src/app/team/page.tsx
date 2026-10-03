@@ -1,17 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Users,
   Copy,
   Check,
-  Trash2,
   Plus,
   Minus,
   ShoppingCart,
   UserCheck,
-  UserX,
   Clock,
 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -63,7 +60,6 @@ function SeatBar({ used, total }: { used: number; total: number }) {
 
 export default function TeamPage() {
   const { identity, loading: sessionLoading } = useSession();
-  const router = useRouter();
 
   const [ownedTeam, setOwnedTeam] = useState<TeamRow | null>(null);
   const [memberOfTeam, setMemberOfTeam] = useState<TeamRow | null>(null);

@@ -28,6 +28,7 @@ export function AuthModal() {
     pendingIntent,
     clearPendingIntent,
     setInlineCheckoutOpen,
+    setAppError,
   } = useSession();
   const router = useRouter();
 
@@ -75,9 +76,13 @@ export function AuthModal() {
       });
       if (intent.mode === "inline") setInlineCheckoutOpen(true);
       await launchCheckout(session, intent.mode, () => router.push("/dashboard"));
-    } catch {
+    } catch (err) {
       // Checkout failing should not strand a customer who did successfully
-      // sign in — put them on the dashboard, signed in, and let them retry.
+      // sign in — put them on the dashboard, signed in, and let them retry —
+      // but they still need to know it failed, via the same global error
+      // notification the pricing page's own buy flow uses (this path was
+      // previously silent, a gap found during that feature's own testing).
+      setAppError((err as Error).message, "Sign-in error");
       router.push("/dashboard");
     }
   }
@@ -118,7 +123,7 @@ export function AuthModal() {
       className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 backdrop-blur-sm px-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Sign in to Atlas Studio"
+      aria-label="Sign in to Foundry.Studio"
     >
       <Card className="w-full max-w-md p-6 relative animate-fade-up">
         <button
@@ -134,7 +139,7 @@ export function AuthModal() {
             ? `Continue to buy ${pendingIntent.tierLabel}`
             : isGuestUpgrade
               ? "Keep your guest progress"
-              : "Sign in to Atlas Studio"}
+              : "Sign in to Foundry.Studio"}
         </h2>
         {pendingIntent && (
           <p className="mt-1 text-sm text-ink-400">

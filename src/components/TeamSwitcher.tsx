@@ -39,7 +39,7 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
         if (memberOf) setMemberTeam(memberOf.team);
 
         // Restore last selected context from localStorage.
-        const saved = typeof window !== "undefined" ? localStorage.getItem("atlas-team-ctx") : null;
+        const saved = typeof window !== "undefined" ? localStorage.getItem("foundry-team-ctx") : null;
         if (saved === "team" && (owned || memberOf)) setContext("team");
       })
       .catch(() => {
@@ -64,7 +64,7 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
   function switchTo(next: Context) {
     setContext(next);
     setOpen(false);
-    if (typeof window !== "undefined") localStorage.setItem("atlas-team-ctx", next);
+    if (typeof window !== "undefined") localStorage.setItem("foundry-team-ctx", next);
     if (next === "team") router.push("/team");
     else router.push("/dashboard");
   }

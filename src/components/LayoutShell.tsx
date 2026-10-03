@@ -68,7 +68,7 @@ export function LayoutShell({ children }: { children: ReactNode }) {
       {showSidebar && <AppSidebar />}
 
       <motion.div
-        className="flex min-h-screen flex-1 flex-col"
+        className="flex min-h-screen min-w-0 flex-1 flex-col"
         animate={{ marginLeft }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         style={{ willChange: "margin-left" }}
@@ -80,7 +80,7 @@ export function LayoutShell({ children }: { children: ReactNode }) {
           </header>
         )}
 
-        <div className="flex-1 flex flex-col">{children}</div>
+        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
       </motion.div>
     </div>
   );

@@ -154,7 +154,7 @@ export async function POST(request: Request) {
         // many invite-link slots to create.
         metadata: { purchaseId, seatCount: String(seatQty) },
         // Brand colours in both palettes, so the customer's profile preference
-        // (light / dark / follow the device) still looks like Atlas.
+        // (light / dark / follow the device) still looks like Foundry.Studio.
         customization: {
           theme: identity.checkoutTheme,
           theme_config: {

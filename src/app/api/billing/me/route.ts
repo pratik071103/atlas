@@ -25,7 +25,7 @@ export async function GET() {
         id: identity.userId,
         kind: identity.isAnonymous ? "guest" : "user",
         // Anonymous users hold a generated placeholder name/email
-        // (temp-…@guest.atlas.local) — not something to show or return.
+        // (temp-…@guest.foundry.local) — not something to show or return.
         name: identity.isAnonymous ? null : identity.name || null,
         email: identity.isAnonymous ? null : identity.email || null,
       },

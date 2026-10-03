@@ -7,12 +7,17 @@
     /* ── Sidebar geometry ─────────────────────────────────────── */
     --sidebar-width: 240px;
     --sidebar-width-icon: 56px;
-/* ── Sidebar colour tokens (Atlas palette) ───────────────── */
+/* ── Sidebar colour tokens (Foundry.Studio palette) ───────────────── */
     --sidebar-bg: #f2e9db;       /* brand cream */
     --sidebar-border: #e9ebe8;   /* ink-100 */
     --sidebar-fg: #464d46;           /* ink-600 */
-    --sidebar-accent: #f7f8f7;       /* ink-50  */
-    --sidebar-accent-fg: #0c0f0c;    /* ink-900 */
+    /* The active/hover pill. Was ink-50, which on the cream sidebar read as a
+       plain white chip; now the same selection blue the STORE title and the
+       pricing-card hover slab use, so "this is selected" is one colour across
+       the whole app. Foreground flips to white — ink-900 on this blue fails
+       contrast badly. */
+    --sidebar-accent: #3761E6;       /* brand.highlight */
+    --sidebar-accent-fg: #ffffff;
     --sidebar-primary: #c3ee3f;      /* lime-400 */
     --sidebar-primary-fg: #0c0f0c;   /* ink-900 */
     --sidebar-ring: #8a67da;         /* lavender-500 */
@@ -40,8 +45,15 @@
   .eyebrow {
     @apply inline-flex items-center gap-1.5 text-xs font-bold tracking-[0.14em] uppercase text-ink-600;
   }
+  /* The heavy black outline is the app's signature, set by the pricing cards
+     and the Hero. It lives here rather than being re-typed per page so every
+     surface — dashboard, profile, team, the panels inside them — reads as one
+     system. `border-2` rather than border+ring so a caller that needs a
+     semantic colour (`border-red-100` on a failure card) can still override it
+     with a plain utility; a ring would survive that override and put a black
+     outline around a red card. */
   .card {
-    @apply bg-white border border-ink-100 rounded-xl2 shadow-soft;
+    @apply bg-white border-2 border-ink-900 rounded-xl2 shadow-soft;
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-lime-400 px-5 py-2.5 text-sm font-bold text-ink-900 transition-all hover:bg-lime-300 active:translate-y-px disabled:opacity-50 disabled:pointer-events-none;
@@ -65,7 +77,7 @@
 }
 
 /* ─── bc-cta pill button (from Uiverse.io by uiverse-astronaut) ─────────────
-   Color tokens mapped to the Atlas palette:
+   Color tokens mapped to the Foundry.Studio palette:
    --bc-cta-bg       → lime-400  (#c3ee3f)
    --bc-cta-ink      → ink-900   (#0c0f0c)
    --bc-cta-paper    → paper     (#ffffff)
@@ -335,6 +347,27 @@
 .Btn--blue {
   --btn-bg: #3761e6;
   --btn-fill: #c6fe1e;
+}
+
+/* Disabled (button mode only — a link cannot be disabled). Everything the
+   hover does has to be unwound explicitly, or an inert control still lifts and
+   fills under the pointer and reads as clickable. */
+.Btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.Btn:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(12, 15, 12, 0.15);
+}
+
+.Btn:disabled:hover .BG {
+  transform: scale(0);
+}
+
+.Btn:disabled:hover .svgContainer {
+  color: var(--btn-ink);
 }
 
 /* Text-label pill — same fill-sweep hover, but wide enough for a label */

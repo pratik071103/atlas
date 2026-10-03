@@ -22,8 +22,16 @@ function toErrorResponse(err: unknown): NextResponse {
     // every service that can throw.
     if (err.name === "InsufficientCreditsError") return fail(err.message, 400);
     if (err.name === "MongoServerSelectionError" || err.name === "MongoNetworkError") {
-      console.error("[api] database unreachable:", err.message);
-      return fail("Could not reach the database. Is MONGODB_URI set and the cluster up?", 503);
+      // The operator hint — which env var to check — belongs in the log, not
+      // in a response body. It used to be the customer-facing text, so a
+      // transient cluster blip told whoever was using the app to go and check
+      // MONGODB_URI, naming internal configuration to someone who cannot act
+      // on it.
+      console.error(
+        "[api] database unreachable — check MONGODB_URI and that the cluster is up:",
+        err.message
+      );
+      return fail("We can't reach our systems right now. Please try again in a moment.", 503);
     }
     console.error("[api]", err);
     return fail(err.message || "Something went wrong. Please try again.", 500);

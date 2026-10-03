@@ -45,6 +45,15 @@ export default {
           lime: "#C6FE1E",
           blue: "#1264FF",
           cream: "#F2E9DB",
+          // The "selection" blue — the slab behind STORE / FOUNDRY / FINEST as
+          // SelectableWord sweeps across them, and the hover slab behind a
+          // pricing card. Deliberately a touch deeper and less saturated than
+          // brand.blue: at the large solid areas these fills cover, #1264FF
+          // vibrates against the cream page background, while white text on it
+          // sits just under AA. One token because the two uses must read as
+          // the same gesture — the card hover is meant to look like the same
+          // highlighter that ran over the title.
+          highlight: "#3761E6",
         },
         paper: "#ffffff",
       },
