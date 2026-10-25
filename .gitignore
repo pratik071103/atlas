@@ -13,3 +13,6 @@ dist/
 
 # TypeScript incremental build info
 *.tsbuildinfo
+.vercel
+.env*
+!.env.example

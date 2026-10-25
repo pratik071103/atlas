@@ -1,0 +1,7 @@
+.dbdata
+.next
+node_modules
+.env*
+!.env.example
+bun.lock
+*.tsbuildinfo

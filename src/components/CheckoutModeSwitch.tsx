@@ -2,7 +2,6 @@
 
 import { Store } from "lucide-react";
 import { StorefrontButton } from "@/components/ui/StorefrontButton";
-import { LinkPreview } from "@/components/ui/LinkPreview";
 import type { CheckoutMode } from "@/lib/checkout";
 
 const MODES: { id: CheckoutMode; label: string }[] = [
@@ -17,7 +16,7 @@ interface Props {
 }
 
 export function CheckoutModeSwitch({ value, onChange }: Props) {
-  // Dodo-hosted storefront preview page. Hidden when NEXT_PUBLIC_DODO_STORE_URL
+  // Dodo-hosted storefront page. Hidden when NEXT_PUBLIC_DODO_STORE_URL
   // is not set.
   const storefrontUrl = process.env.NEXT_PUBLIC_DODO_STORE_URL ?? "";
 
@@ -25,22 +24,14 @@ export function CheckoutModeSwitch({ value, onChange }: Props) {
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
       <div className="flex items-center gap-2.5">
         {storefrontUrl && (
-          // The image card replaces StorefrontButton's own text tooltip —
-          // both at once would stack two floating things over one small
-          // icon. The caption inside the card carries the label instead.
-          <LinkPreview
-            imageSrc="/storefront-preview.png"
-            caption="storefront preview"
-            alt="Preview of the Foundry.Studio storefront"
-          >
-            <StorefrontButton
-              href={storefrontUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              icon={Store}
-              ariaLabel="Open Dodo storefront preview"
-            />
-          </LinkPreview>
+          <StorefrontButton
+            href={storefrontUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            icon={Store}
+            tooltip="Storefront"
+            ariaLabel="Open Dodo storefront"
+          />
         )}
 
         <div className="inline-flex shrink-0 rounded-full border border-ink-200 bg-white p-1">

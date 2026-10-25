@@ -30,17 +30,26 @@ import { webhookHandlers } from "@/lib/services/webhook-handlers";
 // webhook route: POST /api/auth/dodopayments/webhooks.
 // ---------------------------------------------------------------------------
 
+/** Vercel's system URLs are bare hostnames; Better Auth wants full origins. */
+function vercelOrigin(host: string | undefined): string | undefined {
+  return host ? `https://${host}` : undefined;
+}
+
 export const auth = betterAuth({
   // The adapter is schemaless on Mongo, so — unlike the SQLite build — there
   // is no `@better-auth/cli migrate` step before the app can boot.
   database: mongodbAdapter(mongoDb),
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+  baseURL: process.env.BETTER_AUTH_URL ?? vercelOrigin(process.env.VERCEL_URL) ?? "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET ?? "foundry-studio-dev-secret-change-me",
+  // Vercel previews get a new hostname per deploy, so trust the deployment
+  // and branch URLs Vercel injects instead of pinning one in env.
   trustedOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     process.env.BETTER_AUTH_URL,
     process.env.NEXT_PUBLIC_APP_URL,
+    vercelOrigin(process.env.VERCEL_URL),
+    vercelOrigin(process.env.VERCEL_BRANCH_URL),
   ].filter(Boolean) as string[],
 
   emailAndPassword: {

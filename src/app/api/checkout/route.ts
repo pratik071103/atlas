@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
   creditBucketFor,
   findTier,
-  isMetered,
   tierPrice,
   toMinorUnits,
 } from "@shared/catalog";
@@ -120,10 +119,11 @@ export async function POST(request: Request) {
     }
 
     // ---- Real mode ---------------------------------------------------------
-    // Metered products (usage-based, on-demand) authorize a payment method up
-    // front with no initial charge — quantity 0 plus `mandate_only` — and bill
-    // later from the usage events the playground ingests.
-    const metered = isMetered(product.group);
+    // On-demand products authorize a payment method up front with no initial
+    // charge (`mandate_only`) and bill later. Usage-based products are plain
+    // subscriptions whose meters bill from ingested usage events — Dodo
+    // rejects `on_demand` data for usage-based pricing (422).
+    const metered = product.group === "on_demand";
 
     let session;
     try {

@@ -129,14 +129,21 @@ export default function ProfilePage() {
       setAppError("Create an account to manage billing — guests have no customer record yet.", "Profile");
       return;
     }
+    // Open the tab synchronously, inside the click, so popup blockers allow it;
+    // it is pointed at the portal once the session URL comes back.
+    const tab = window.open("", "_blank");
+    if (tab) tab.opener = null;
     try {
       const { data, error: portalError } = await authClient.dodopayments.customer.portal();
       if (portalError || !data?.url) {
+        tab?.close();
         setAppError(portalError?.message ?? "Could not open the customer portal.", "Profile");
         return;
       }
-      window.location.href = data.url;
+      if (tab) tab.location.href = data.url;
+      else window.location.href = data.url; // popup blocked anyway — fall back to this tab
     } catch (e) {
+      tab?.close();
       setAppError((e as Error).message, "Profile");
     }
   }
