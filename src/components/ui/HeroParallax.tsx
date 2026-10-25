@@ -36,7 +36,7 @@ function unitSuffix(group: BillingModel) {
     case "on_demand":
       return "one-time";
     case "usage_based":
-      return "/ API call";
+      return "/ mo";
     case "seat_based":
       return "/ seat / mo";
     case "subscription":
@@ -149,7 +149,9 @@ function ProductCard({
       <div
         role="button"
         tabIndex={0}
-        aria-label={`${product.name} — ${tier.label}, ${formatPrice(displayAmount)} ${unitSuffix(product.group)}`}
+        aria-label={`${product.name} — ${tier.label}, ${formatPrice(displayAmount)} ${unitSuffix(product.group)}${
+          tier.perUnit !== undefined ? ` plus ${formatPrice(tier.perUnit)} per API call` : ""
+        }`}
         onClick={activate}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -221,6 +223,9 @@ function ProductCard({
             </span>
             <span className="text-[11px] text-ink-400">{unitSuffix(product.group)}</span>
           </div>
+          {tier.perUnit !== undefined && (
+            <p className="text-[11px] text-ink-500">+ {formatPrice(tier.perUnit)} / API call</p>
+          )}
 
           {/* Driven by the CARD's hover, not its own: the pill sits inside a
               role="button" card, so hovering it necessarily hovers the card

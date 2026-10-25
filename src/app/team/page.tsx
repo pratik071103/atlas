@@ -151,7 +151,7 @@ export default function TeamPage() {
             </div>
             <div>
               <p className="font-semibold text-ink-900">Extra Seats</p>
-              <p className="text-sm text-ink-500">$8 / seat / month · 20 credits each</p>
+              <p className="text-sm text-ink-500">$5 / seat / month · 20 credits each</p>
             </div>
           </div>
 

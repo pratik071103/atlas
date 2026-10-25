@@ -325,7 +325,7 @@ export default function ProfilePage() {
                 unique invite link.
               </p>
               <Button href="/pricing" variant="secondary" className="mt-4">
-                <Users size={14} /> Add seats — $8/seat/mo
+                <Users size={14} /> Add seats — $5/seat/mo
               </Button>
             </>
           )}

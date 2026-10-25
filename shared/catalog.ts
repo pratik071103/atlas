@@ -13,7 +13,7 @@
 //
 // Seat-based billing uses two Dodo objects:
 //   TEAM_BASE_PRODUCT_ID — the $0/month base subscription
-//   SEAT_ADDON_ID        — the $8/month per-seat add-on (attached to the base)
+//   SEAT_ADDON_ID        — the $5/month per-seat add-on (attached to the base)
 // ---------------------------------------------------------------------------
 
 /**
@@ -25,7 +25,7 @@ export const TEAM_BASE_PRODUCT_ID: string =
   "pdt_team_workspace";
 
 /**
- * Dodo add-on id for the $8/month "Extra Seat" add-on.
+ * Dodo add-on id for the $5/month "Extra Seat" add-on.
  * Create it in the Dodo dashboard and set DODO_SEAT_ADDON_ID in .env.
  * Attach it to the Team Workspace base product before going live.
  */
@@ -79,6 +79,11 @@ export interface PriceTier {
    * base product. The checkout route sends this as the add-on when quantity > 0.
    */
   addonId?: string;
+  /**
+   * For usage-based tiers only: the metered price per event, charged on top
+   * of `monthly` (the fixed base fee). Mirrors the Dodo meter's price_per_unit.
+   */
+  perUnit?: number;
   art: ArtSpec;
 }
 
@@ -201,12 +206,14 @@ export const CATALOG: Product[] = [
       {
         id: "usage-metered",
         label: "Pay-per-image",
-        monthly: 0.4,
-        yearly: 0.4,
+        // Matches the Dodo product: $10/month fixed + $0.40 per `api.call`.
+        monthly: 10,
+        yearly: 120,
+        perUnit: 0.4,
         dodoProductId: "pdt_0NlXH5mD4LhsoRLPH2y7f",
-        description: "$0.40 per API call, billed at the end of the cycle.",
+        description: "$10/month base plus $0.40 per API call, billed at the end of the cycle.",
         features: [
-          "No minimum spend",
+          "$10 monthly base fee",
           "Usage ingested to Dodo automatically",
           "Live event log on the dashboard",
         ],
@@ -224,8 +231,8 @@ export const CATALOG: Product[] = [
       {
         id: "seat-monthly",
         label: "Per Seat / Month",
-        monthly: 8,
-        yearly: 80,
+        monthly: 5,
+        yearly: 50,
         seats: 1,
         credits: 20,
         // The base product is $0 — the actual charge comes from the add-on.
