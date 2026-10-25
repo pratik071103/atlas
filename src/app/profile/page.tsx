@@ -134,10 +134,14 @@ export default function ProfilePage() {
     const tab = window.open("", "_blank");
     if (tab) tab.opener = null;
     try {
-      const { data, error: portalError } = await authClient.dodopayments.customer.portal();
-      if (portalError || !data?.url) {
+      // Plain fetch, not authClient.dodopayments.customer.portal(): the adapter
+      // answers `{ url, redirect: true }`, and Better Auth's client redirect
+      // plugin would also navigate THIS tab — leaving the portal open twice.
+      const res = await fetch("/api/auth/dodopayments/customer/portal", { credentials: "include" });
+      const data = (await res.json().catch(() => null)) as { url?: string; message?: string } | null;
+      if (!res.ok || !data?.url) {
         tab?.close();
-        setAppError(portalError?.message ?? "Could not open the customer portal.", "Profile");
+        setAppError(data?.message ?? "Could not open the customer portal.", "Profile");
         return;
       }
       if (tab) tab.location.href = data.url;
